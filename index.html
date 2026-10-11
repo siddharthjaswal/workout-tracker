@@ -2,22 +2,22 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Home Workout Tracker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0a0a0c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Workout">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Workout Tracker</title>
 <style>
 :root {
-  --bg:#f7f5f2; --surface:#fff; --surface-2:#f1eee9; --line:#e2ddd5;
-  --ink:#1c1a17; --ink-2:#5f594f; --ink-3:#8b8377;
-  --accent:#b4461f; --accent-soft:#fdeee7; --ok:#2f6f4f;
-  --radius:14px; --shadow:0 1px 2px rgba(28,26,23,.05),0 8px 24px -16px rgba(28,26,23,.28);
-}
-@media (prefers-color-scheme:dark) {
-  :root {
-    --bg:#14130f; --surface:#1d1c18; --surface-2:#26241f; --line:#33302a;
-    --ink:#f2efe9; --ink-2:#b3ab9d; --ink-3:#867e72;
-    --accent:#ff8b5e; --accent-soft:#3a1f14; --ok:#7fc39a;
-    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -16px rgba(0,0,0,.8);
-  }
+  --bg:#0a0a0c; --surface:#131316; --surface-2:#1a1a20; --line:#26262e;
+  --ink:#ebe7df; --ink-2:#a8a195; --ink-3:#6f6a62;
+  --accent:#ff7a45; --accent-soft:#2b1810; --ok:#6fcf97; --warn:#f2c14e;
+  --radius:14px; --shadow:0 1px 2px rgba(0,0,0,.5),0 10px 28px -18px rgba(0,0,0,.9);
 }
 * { box-sizing:border-box; }
 html { scroll-behavior:smooth; }
@@ -26,14 +26,15 @@ body {
   font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   -webkit-text-size-adjust:100%;
 }
-.wrap { max-width:920px; margin:0 auto; padding:0 20px 80px; }
+.wrap { max-width:920px; margin:0 auto; padding:0 16px calc(80px + env(safe-area-inset-bottom)); }
 h1,h2,h3 { line-height:1.2; letter-spacing:-.015em; margin:0; }
 p { margin:0; }
+a { color:var(--accent); }
 
-header.top { padding:44px 0 24px; }
-header.top h1 { font-size:clamp(28px,5vw,40px); }
-header.top .sub { color:var(--ink-2); margin-top:10px; max-width:62ch; }
-.chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+header.top { padding:36px 0 20px; }
+header.top h1 { font-size:clamp(26px,5vw,38px); }
+header.top .sub { color:var(--ink-2); margin-top:8px; max-width:62ch; font-size:15px; }
+.chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
 .chip {
   font-size:12.5px; font-weight:600; letter-spacing:.02em; padding:5px 11px;
   border-radius:999px; background:var(--surface); border:1px solid var(--line); color:var(--ink-2);
@@ -41,79 +42,63 @@ header.top .sub { color:var(--ink-2); margin-top:10px; max-width:62ch; }
 
 nav.tabs {
   position:sticky; top:0; z-index:5; display:flex; gap:4px; overflow-x:auto;
-  padding:10px 0; margin-bottom:26px;
-  background:color-mix(in srgb,var(--bg) 88%,transparent);
-  backdrop-filter:blur(12px); border-bottom:1px solid var(--line);
+  padding:10px 0; margin-bottom:22px;
+  background:color-mix(in srgb,var(--bg) 90%,transparent);
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid var(--line);
   scrollbar-width:none;
 }
 nav.tabs::-webkit-scrollbar { display:none; }
 .tab {
   flex:0 0 auto; font:inherit; font-size:14px; font-weight:600; color:var(--ink-2);
   background:none; border:0; padding:8px 14px; border-radius:999px; cursor:pointer;
-  white-space:nowrap; transition:background .15s,color .15s; text-decoration:none;
+  white-space:nowrap; transition:background .15s,color .15s;
 }
 .tab:hover { background:var(--surface-2); color:var(--ink); }
-/* Two ways to mark the active tab: the :checked rule is the no-JS fallback, and
-   .tab.on is kept in sync by script — Chrome leaves the :checked-driven style
-   stale across the descendant step, so the class is what actually repaints. */
-#t-overview:checked ~ nav .tab[for="t-overview"],
-#t-day0:checked ~ nav .tab[for="t-day0"],
-#t-day1:checked ~ nav .tab[for="t-day1"],
-#t-day2:checked ~ nav .tab[for="t-day2"],
-#t-day3:checked ~ nav .tab[for="t-day3"],
-#t-log:checked ~ nav .tab[for="t-log"],
-.tab.on { background:var(--accent); color:#fff; }
-#t-overview:focus-visible ~ nav .tab[for="t-overview"],
-#t-day0:focus-visible ~ nav .tab[for="t-day0"],
-#t-day1:focus-visible ~ nav .tab[for="t-day1"],
-#t-day2:focus-visible ~ nav .tab[for="t-day2"],
-#t-day3:focus-visible ~ nav .tab[for="t-day3"],
-#t-log:focus-visible ~ nav .tab[for="t-log"] { outline:2px solid var(--accent); outline-offset:2px; }
+.tab[aria-selected="true"] { background:var(--accent); color:#120804; }
+.tab:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 
-/* Panel switching is pure CSS — no JavaScript required. */
-.tabstate { position:absolute; width:0; height:0; opacity:0; pointer-events:none; }
-.panel { display:none; animation:rise .28s ease both; }
-#t-overview:checked ~ #overview,
-#t-day0:checked ~ #day0,
-#t-day1:checked ~ #day1,
-#t-day2:checked ~ #day2,
-#t-day3:checked ~ #day3,
-#t-log:checked ~ #log { display:block; }
+.panel { animation:rise .25s ease both; }
+.panel[hidden] { display:none; }
 @keyframes rise { from { opacity:0; transform:translateY(6px); } }
-.panel-head { margin-bottom:22px; }
-.eyebrow {
-  font-size:12px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--accent);
-}
-.panel-head h2 { font-size:26px; margin-top:6px; }
+.panel-head { margin-bottom:20px; }
+.eyebrow { font-size:12px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--accent); }
+.panel-head h2 { font-size:25px; margin-top:6px; }
 .lede { color:var(--ink-2); margin-top:8px; font-size:15px; }
 
 .card {
   background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
-  padding:22px; box-shadow:var(--shadow); margin-bottom:18px;
+  padding:20px; box-shadow:var(--shadow); margin-bottom:16px;
 }
-.card h2 { font-size:18px; margin-bottom:14px; }
+.card h2 { font-size:17px; margin-bottom:12px; }
+.card.accent { border-color:color-mix(in srgb,var(--accent) 45%,var(--line)); background:linear-gradient(180deg,var(--accent-soft),var(--surface)); }
+.card.accent h2 { color:var(--accent); }
 
-ul.rots { list-style:none; margin:0; padding:0; display:grid; gap:10px; }
-.rot {
-  display:flex; gap:14px; align-items:flex-start; padding:13px 14px; cursor:pointer;
-  border:1px solid var(--line); border-radius:11px; background:var(--surface-2);
-  transition:border-color .15s,transform .15s; text-decoration:none; color:inherit;
+.week { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+.wd {
+  display:flex; flex-direction:column; gap:4px; align-items:center; text-align:center;
+  padding:10px 4px; border-radius:11px; border:1px solid var(--line); background:var(--surface-2);
+  color:var(--ink-2); font-size:11.5px; line-height:1.25; text-decoration:none; cursor:default;
 }
-.rot:hover { border-color:var(--accent); transform:translateX(2px); }
-.rot-n {
-  flex:0 0 26px; height:26px; border-radius:50%; background:var(--accent); color:#fff;
-  font-size:13px; font-weight:700; display:grid; place-items:center;
-}
-.rot h3 { font-size:15px; }
-.rot p { font-size:13.5px; color:var(--ink-2); margin-top:2px; }
+.wd b { font-size:13px; color:var(--ink); letter-spacing:.02em; }
+.wd.sess { border-color:color-mix(in srgb,var(--accent) 40%,var(--line)); cursor:pointer; }
+.wd.sess:hover { border-color:var(--accent); }
+.wd.sess b { color:var(--accent); }
+.wd.today { outline:2px solid var(--ok); outline-offset:1px; }
+.wd .k { font-size:10.5px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.06em; }
+.wd .s { display:none; }
+.wd .k.office { color:var(--warn); }
 
 ul.notes { margin:0; padding-left:20px; display:grid; gap:9px; color:var(--ink-2); font-size:15px; }
 ul.notes strong { color:var(--ink); }
+.btnrow { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+
+.warmup { font-size:14px; color:var(--ink-2); }
+.warmup b { color:var(--ink); }
 
 .ex-list { display:grid; gap:12px; }
 .ex {
-  display:flex; gap:16px; background:var(--surface); border:1px solid var(--line);
-  border-radius:var(--radius); padding:18px 20px; box-shadow:var(--shadow);
+  display:flex; gap:14px; background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--radius); padding:16px; box-shadow:var(--shadow);
 }
 .ex-num {
   flex:0 0 30px; height:30px; border-radius:9px; background:var(--accent-soft); color:var(--accent);
@@ -122,38 +107,52 @@ ul.notes strong { color:var(--ink); }
 .ex-body { flex:1; min-width:0; }
 .ex h3 { font-size:17px; }
 .area { font-size:13px; color:var(--ink-3); margin-top:3px; }
-.specs { display:flex; flex-wrap:wrap; gap:8px; margin:13px 0 0; }
+.specs { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 0; }
 .specs div { background:var(--surface-2); border-radius:9px; padding:7px 11px; }
 .specs dt { font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); }
 .specs dd { margin:2px 0 0; font-size:14.5px; font-weight:650; }
+.specs dd small { font-weight:500; color:var(--ink-2); font-size:12px; }
+.specs .w dd { color:var(--accent); }
 .cue { font-size:14px; color:var(--ink-2); margin-top:12px; }
 .cue span {
   display:block; font-size:11px; font-weight:700; letter-spacing:.06em;
   text-transform:uppercase; color:var(--ink-3); margin-bottom:2px;
 }
-a.vid {
-  display:inline-flex; align-items:center; gap:6px; margin-top:13px; font-size:13.5px; font-weight:600;
-  color:var(--accent); text-decoration:none; border:1px solid var(--line); border-radius:999px;
-  padding:6px 13px 6px 9px; transition:background .15s,border-color .15s;
+.cue.prog span { color:var(--ok); }
+
+.yt {
+  position:relative; margin-top:14px; aspect-ratio:16/9; border-radius:11px; overflow:hidden;
+  background:#000; cursor:pointer; border:1px solid var(--line);
 }
-a.vid:hover { background:var(--accent-soft); border-color:var(--accent); }
-a.vid svg { width:15px; height:15px; fill:currentColor; }
+.yt img { width:100%; height:100%; object-fit:cover; display:block; opacity:.85; transition:opacity .2s; }
+.yt:hover img { opacity:1; }
+.yt .play {
+  position:absolute; inset:0; margin:auto; width:64px; height:44px; border:0; border-radius:12px;
+  background:rgba(255,122,69,.95); color:#120804; font-size:18px; cursor:pointer; display:grid; place-items:center;
+}
+.yt .play svg { width:22px; height:22px; fill:currentColor; }
+.yt .cap {
+  position:absolute; left:0; right:0; bottom:0; padding:22px 12px 9px; font-size:12px; color:#fff;
+  background:linear-gradient(transparent,rgba(0,0,0,.75)); pointer-events:none;
+}
+.yt iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
 
 form.logform { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
 form.logform label { display:flex; flex-direction:column; gap:5px; font-size:12.5px; font-weight:600; color:var(--ink-2); }
 form.logform .wide { grid-column:1/-1; }
-input,select {
+input,select,textarea {
   font:inherit; font-size:14.5px; font-weight:400; color:var(--ink); background:var(--bg);
   border:1px solid var(--line); border-radius:9px; padding:9px 10px; width:100%;
 }
-input:focus,select:focus { outline:2px solid var(--accent); outline-offset:1px; }
+textarea { min-height:72px; resize:vertical; }
+input:focus,select:focus,textarea:focus { outline:2px solid var(--accent); outline-offset:1px; }
 .actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
 button.btn {
   font:inherit; font-size:14px; font-weight:650; padding:10px 18px; border-radius:9px;
   border:1px solid var(--line); background:var(--surface-2); color:var(--ink); cursor:pointer;
 }
-button.btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
-button.btn:hover { filter:brightness(.96); }
+button.btn.primary { background:var(--accent); border-color:var(--accent); color:#120804; }
+button.btn:hover { filter:brightness(1.1); }
 
 .tablewrap { overflow-x:auto; margin-top:6px; }
 table { border-collapse:collapse; width:100%; font-size:14px; min-width:760px; }
@@ -162,9 +161,10 @@ th {
   padding:0 12px 9px; border-bottom:1px solid var(--line); white-space:nowrap;
 }
 td { padding:11px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+td.note { white-space:pre-wrap; min-width:200px; max-width:360px; }
 tbody tr:hover { background:var(--surface-2); }
 .pill { font-size:12px; font-weight:650; padding:3px 9px; border-radius:999px; background:var(--surface-2); white-space:nowrap; }
-.pill.yes { background:color-mix(in srgb,var(--ok) 16%,transparent); color:var(--ok); }
+.pill.yes { background:color-mix(in srgb,var(--ok) 18%,transparent); color:var(--ok); }
 .pill.no { background:var(--accent-soft); color:var(--accent); }
 .del { background:none; border:0; color:var(--ink-3); cursor:pointer; font-size:16px; line-height:1; padding:2px 6px; border-radius:6px; }
 .del:hover { background:var(--accent-soft); color:var(--accent); }
@@ -179,15 +179,21 @@ tbody tr:hover { background:var(--surface-2); }
 footer { margin-top:34px; padding-top:18px; border-top:1px solid var(--line); font-size:13px; color:var(--ink-3); }
 
 @media (max-width:640px) {
-  header.top { padding:28px 0 18px; }
-  .ex { padding:16px; gap:12px; }
+  header.top { padding:24px 0 16px; }
+  .ex { padding:14px; gap:12px; }
   form.logform { grid-template-columns:1fr 1fr; }
-  .card { padding:18px; }
+  .card { padding:16px; }
+  .week { gap:4px; }
+  .wd { padding:8px 2px; font-size:10.5px; min-width:0; }
+  .wd span { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .wd .k, .wd .l { display:none; }
+  .wd .s { display:block; }
 }
 @media print {
-  nav.tabs, .actions, .del, a.vid { display:none !important; }
-  .panel { display:block !important; animation:none; }
-  body { background:#fff; }
+  nav.tabs, .actions, .del, .yt, .btnrow { display:none !important; }
+  .panel[hidden] { display:block !important; }
+  .panel { animation:none; }
+  body { background:#fff; color:#000; }
   .ex, .card { box-shadow:none; break-inside:avoid; }
 }
 </style>
@@ -196,486 +202,116 @@ footer { margin-top:34px; padding-top:18px; border-top:1px solid var(--line); fo
 <div class="wrap">
 
 <header class="top">
-  <h1>Home Workout Tracker</h1>
-  <p class="sub">4-day repeating split — vegetarian, home dumbbells (7kg x2, 10kg x1), adjustable bench</p>
+  <h1>Workout Tracker</h1>
+  <p class="sub">Upper / Lower &times; 2 &middot; week starts Saturday &middot; home dumbbells and an adjustable bench. Goal: drop fat, grow arms and shoulders, every muscle twice a week.</p>
   <div class="chips">
-    <span class="chip">4-day rotation</span>
-    <span class="chip">7kg &times;2 &middot; 10kg dumbbells</span>
-    <span class="chip">Adjustable bench</span>
+    <span class="chip">5 &middot; 7.5 &middot; 10 kg pairs</span>
+    <span class="chip">Bench &minus;15&deg; to 80&deg;</span>
+    <span class="chip">Week starts Sat</span>
     <span class="chip">Home &middot; no gym</span>
   </div>
 </header>
 
-  <input class="tabstate" type="radio" name="tab" id="t-overview" checked aria-hidden="true" tabindex="-1">
-  <input class="tabstate" type="radio" name="tab" id="t-day0" aria-hidden="true" tabindex="-1">
-  <input class="tabstate" type="radio" name="tab" id="t-day1" aria-hidden="true" tabindex="-1">
-  <input class="tabstate" type="radio" name="tab" id="t-day2" aria-hidden="true" tabindex="-1">
-  <input class="tabstate" type="radio" name="tab" id="t-day3" aria-hidden="true" tabindex="-1">
-  <input class="tabstate" type="radio" name="tab" id="t-log" aria-hidden="true" tabindex="-1">
+<nav class="tabs" role="tablist" id="tabs"></nav>
 
-<nav class="tabs" role="tablist">
-  <label class="tab" for="t-overview" tabindex="0" role="tab">Overview</label>
-  <label class="tab" for="t-day0" tabindex="0" role="tab">Day A</label>
-  <label class="tab" for="t-day1" tabindex="0" role="tab">Day B</label>
-  <label class="tab" for="t-day2" tabindex="0" role="tab">Day C</label>
-  <label class="tab" for="t-day3" tabindex="0" role="tab">Day D</label>
-  <label class="tab" for="t-log" tabindex="0" role="tab">Log</label>
-</nav>
-
-<section id="overview" class="panel">
-  <div class="card">
-    <h2>Rotation order</h2>
-    <ul class="rots">
-      <li><label class="rot" for="t-day0">
-        <span class="rot-n">1</span>
-        <div><h3>Day A</h3><p>Push + Legs (chest/shoulders press + squats)</p></div>
-      </label></li>
-      <li><label class="rot" for="t-day1">
-        <span class="rot-n">2</span>
-        <div><h3>Day B</h3><p>Pull + Core (back/biceps + hamstrings)</p></div>
-      </label></li>
-      <li><label class="rot" for="t-day2">
-        <span class="rot-n">3</span>
-        <div><h3>Day C</h3><p>Chest + Shoulders (isolation focus)</p></div>
-      </label></li>
-      <li><label class="rot" for="t-day3">
-        <span class="rot-n">4</span>
-        <div><h3>Day D</h3><p>Legs + Full Body (unilateral + conditioning)</p></div>
-      </label></li>
+<section class="panel" id="p-overview" role="tabpanel" hidden>
+  <div class="card accent" id="reentry" hidden>
+    <h2>Week 1 back from the break</h2>
+    <ul class="notes">
+      <li><strong>2 sets</strong> per exercise instead of 3-4.</li>
+      <li><strong>One dumbbell size down</strong> from the listed start (10 &rarr; 7.5, 7.5 &rarr; 5, 5 stays 5 with fewer reps).</li>
+      <li>Stop every set <strong>3 reps shy</strong> of failure. Soreness on day 2-3 is the enemy this week, not the weight.</li>
+      <li>Week 2: full sets, listed weights.</li>
     </ul>
-    <p class="lede" style="margin-top:14px">Repeat weekly: A &rarr; B &rarr; C &rarr; D &rarr; repeat. Tap a day to open it.</p>
+    <div class="btnrow"><button class="btn primary" id="reentry-done">Week 1 done &mdash; hide this</button></div>
   </div>
 
   <div class="card">
-    <h2>Training guidelines</h2>
+    <h2>This week</h2>
+    <div class="week" id="week"></div>
+    <p class="lede" style="margin-top:12px">Sat and Sun are the anchors &mdash; together they hit every muscle. Tue and Fri add the second dose. Office days are walk days.</p>
+  </div>
+
+  <div class="card">
+    <h2>Progression rule</h2>
     <ul class="notes">
-      <li>Repeat the 4-day rotation weekly (A -&gt; B -&gt; C -&gt; D -&gt; repeat), resting or walking between sessions as needed.</li>
-      <li>Rest: 60-75s on compound moves, 30-45s on isolation/core work (see each sheet&#x27;s Rest column).</li>
-      <li>5 min warm-up (light cardio + mobility) before every session.</li>
-      <li>Cardio: stair climbing 3-4x/week, 10-15 min - go up hard, come down slow. Flat walks on off days.</li>
-      <li>Listen to soreness: dull, achy muscle soreness is normal (DOMS) - light sessions or a rest day are fine.</li>
-      <li>Sharp or joint-level pain is a stop signal - skip the session and let it settle, don&#x27;t push through it.</li>
-      <li>Log every session (even walks and rest days) in the &#x27;Workout Log&#x27; tab to track consistency over time.</li>
+      <li>Every exercise lists a <strong>start weight</strong> and a <strong>rep range</strong>. <code>2&times;10</code> means 10 kg in each hand, <code>1&times;10</code> one dumbbell.</li>
+      <li>Work inside the range. When <strong>every set</strong> hits the top of the range with 1-2 reps still in the tank &rarr; next dumbbell, reps drop back to the bottom.</li>
+      <li>Ladder: <strong>5 &rarr; 7.5 &rarr; 10</strong>. At 10 kg and the top of the range, follow the exercise&rsquo;s <strong>Progress</strong> line (slower lowering, pauses, 1.5 reps, harder variation, extra set).</li>
+      <li>Form first. A rep that needs a swing, a shrug or an arch doesn&rsquo;t count.</li>
+      <li>Presses and squats will cap out at 10 kg within ~6-8 weeks. A 12.5 kg pair is the single best upgrade when that happens.</li>
     </ul>
   </div>
 
   <div class="card">
-    <h2>How to use this page</h2>
+    <h2>Missed a day?</h2>
     <ul class="notes">
-      <li>Each day tab lists the exercises with sets, reps, suggested weight, rest and a form cue.</li>
-      <li><strong>Form video</strong> opens a YouTube demo &mdash; the only part that needs an internet connection.</li>
-      <li>The <strong>Log</strong> tab saves sessions in this browser (offline) and exports to CSV whenever you want.</li>
-      <li>Print or save as PDF from your browser &mdash; every day prints on its own, videos and buttons are hidden.</li>
+      <li><strong>Missed Tue</strong> &rarr; do Upper B on Wed or Thu evening if you can. Otherwise it&rsquo;s gone.</li>
+      <li><strong>Missed Fri</strong> &rarr; gone. Sat/Sun stay Upper A / Lower A, always. Never shift the anchor.</li>
+      <li>Never stack two lifting sessions on one day.</li>
+      <li><strong>Busy evening</strong> &rarr; do the first 4 exercises of Upper B / Lower B and stop. 30 minutes beats zero.</li>
+      <li>The cycle resets every Saturday no matter what happened.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Fat loss, honestly</h2>
+    <ul class="notes">
+      <li>Love handles, belly and chest fat come off through a <strong>calorie deficit + daily steps</strong>, not through exercises aimed at them. No weighted side bends &mdash; they thicken the waist.</li>
+      <li>Lifting changes the <strong>shape</strong>: upper chest, wide side delts and bigger arms make the chest look tighter and the waist smaller as fat drops.</li>
+      <li>Targets: <strong>~0.5 kg/week</strong> down, <strong>10-12k steps/day</strong> floor, <strong>1.6-2 g protein per kg</strong> (paneer, dal, soy, curd, whey). Stairs 2-3&times;/week, 10-15 min.</li>
+      <li>Weigh daily, judge by the weekly average.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Using this page</h2>
+    <ul class="notes">
+      <li>Each session tab lists exercises with sets, reps, the exact dumbbell, rest, how to progress, a form cue and a <strong>form video that plays right here</strong> (videos need internet, everything else works offline).</li>
+      <li>The page remembers which tab you were on, even after closing it.</li>
+      <li><strong>Install it:</strong> Chrome on Android &rarr; &#8942; menu &rarr; <em>Add to Home screen</em>. It opens full-screen like an app.</li>
+      <li>The <strong>Log</strong> tab saves sessions in this browser only; export CSV any time.</li>
     </ul>
   </div>
 </section>
 
-  <section id="day0" class="panel">
-    <header class="panel-head">
-      <p class="eyebrow">Day A</p>
-      <h2>Push+Legs</h2>
-      <p class="lede">Push + Legs &middot; 6 exercises &middot; 5 min warm-up first</p>
-    </header>
-    <div class="ex-list">
-      <article class="ex">
-        <div class="ex-num">1</div>
-        <div class="ex-body">
-          <h3>Goblet squat</h3>
-          <p class="area">Legs / Glutes</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>4 x 15-20</dd></div>
-            <div><dt>Weight</dt><dd>10kg</dd></div>
-            <div><dt>Rest</dt><dd>60s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Chest up, squat between knees, drive through heels</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=q4CSeayuKbo" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-      <article class="ex">
-        <div class="ex-num">2</div>
-        <div class="ex-body">
-          <h3>Incline DB press</h3>
-          <p class="area">Chest / Shoulders</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>4 x 12-15</dd></div>
-            <div><dt>Weight</dt><dd>7kg x2</dd></div>
-            <div><dt>Rest</dt><dd>60s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Bench 15-30 degrees, control the descent</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=awEEyL5zGvU" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-      <article class="ex">
-        <div class="ex-num">3</div>
-        <div class="ex-body">
-          <h3>Bulgarian split squat</h3>
-          <p class="area">Legs / Glutes</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>3 x 12/leg</dd></div>
-            <div><dt>Weight</dt><dd>Bodyweight or 7kg x2</dd></div>
-            <div><dt>Rest</dt><dd>60s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Rear foot elevated on bench, front knee tracks over toes</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=hiLF_pF3EJM" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-      <article class="ex">
-        <div class="ex-num">4</div>
-        <div class="ex-body">
-          <h3>Shoulder press</h3>
-          <p class="area">Shoulders</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>3 x 12-15</dd></div>
-            <div><dt>Weight</dt><dd>7kg x2</dd></div>
-            <div><dt>Rest</dt><dd>60s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Press straight overhead, avoid arching lower back</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=fuQpuu--bMI" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-      <article class="ex">
-        <div class="ex-num">5</div>
-        <div class="ex-body">
-          <h3>Calf raise</h3>
-          <p class="area">Calves</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>3 x 20</dd></div>
-            <div><dt>Weight</dt><dd>Bodyweight or 7kg x2</dd></div>
-            <div><dt>Rest</dt><dd>30s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Full range, pause at the top squeeze</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=SVtg-1loH4c" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-      <article class="ex">
-        <div class="ex-num">6</div>
-        <div class="ex-body">
-          <h3>Plank</h3>
-          <p class="area">Core</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>3 x 40-60s</dd></div>
-            <div><dt>Weight</dt><dd>Bodyweight</dd></div>
-            <div><dt>Rest</dt><dd>30s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Straight line head to heels, brace core</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=A2b2EmIg0dA" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-    </div>
-  </section>
-  <section id="day1" class="panel">
-    <header class="panel-head">
-      <p class="eyebrow">Day B</p>
-      <h2>Pull+Core</h2>
-      <p class="lede">Pull + Core &middot; 6 exercises &middot; 5 min warm-up first</p>
-    </header>
-    <div class="ex-list">
-      <article class="ex">
-        <div class="ex-num">1</div>
-        <div class="ex-body">
-          <h3>Single-arm row</h3>
-          <p class="area">Back / Biceps</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>4 x 15/arm</dd></div>
-            <div><dt>Weight</dt><dd>7-10kg</dd></div>
-            <div><dt>Rest</dt><dd>60s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Flat back, pull elbow past torso, squeeze shoulder blade</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=gfUg6qWohTk" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-      <article class="ex">
-        <div class="ex-num">2</div>
-        <div class="ex-body">
-          <h3>Romanian deadlift</h3>
-          <p class="area">Hamstrings / Glutes / Back</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>4 x 15</dd></div>
-            <div><dt>Weight</dt><dd>7-10kg x2</dd></div>
-            <div><dt>Rest</dt><dd>60s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Hinge at hips, flat back, slight knee bend</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=aa57T45iFSE" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-      <article class="ex">
-        <div class="ex-num">3</div>
-        <div class="ex-body">
-          <h3>Rear delt fly</h3>
-          <p class="area">Shoulders (rear) / Upper back</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>3 x 15-20</dd></div>
-            <div><dt>Weight</dt><dd>Bodyweight or 7kg x2</dd></div>
-            <div><dt>Rest</dt><dd>45s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Hinge forward, raise arms out to sides, squeeze shoulder blades</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=buuYPLVXsJg" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-      <article class="ex">
-        <div class="ex-num">4</div>
-        <div class="ex-body">
-          <h3>Bicep curl</h3>
-          <p class="area">Biceps</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>3 x 15</dd></div>
-            <div><dt>Weight</dt><dd>7kg x2</dd></div>
-            <div><dt>Rest</dt><dd>30s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Elbows pinned to sides, controlled tempo, no swinging</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=XE_pHwbst04" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-      <article class="ex">
-        <div class="ex-num">5</div>
-        <div class="ex-body">
-          <h3>Hollow hold</h3>
-          <p class="area">Core</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>3 x 15-20s</dd></div>
-            <div><dt>Weight</dt><dd>Bodyweight</dd></div>
-            <div><dt>Rest</dt><dd>30s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Lower back pressed to floor, arms/legs extended, brace</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=0yPin8hSc8o" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-      <article class="ex">
-        <div class="ex-num">6</div>
-        <div class="ex-body">
-          <h3>Bicycle crunches</h3>
-          <p class="area">Core / Obliques</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>3 x 20/side</dd></div>
-            <div><dt>Weight</dt><dd>Bodyweight</dd></div>
-            <div><dt>Rest</dt><dd>30s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Elbow to opposite knee, controlled rotation</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=PAEo-zRSanM" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-    </div>
-  </section>
-  <section id="day2" class="panel">
-    <header class="panel-head">
-      <p class="eyebrow">Day C</p>
-      <h2>Chest+Shoulders</h2>
-      <p class="lede">Chest + Shoulders &middot; 6 exercises &middot; 5 min warm-up first</p>
-    </header>
-    <div class="ex-list">
-      <article class="ex">
-        <div class="ex-num">1</div>
-        <div class="ex-body">
-          <h3>Flat dumbbell press</h3>
-          <p class="area">Chest</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>4 x 15-20</dd></div>
-            <div><dt>Weight</dt><dd>7kg x2</dd></div>
-            <div><dt>Rest</dt><dd>60s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Bench flat, dumbbells to chest line, control descent</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=5Y3VZsLb1Ys" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-      <article class="ex">
-        <div class="ex-num">2</div>
-        <div class="ex-body">
-          <h3>Incline dumbbell fly</h3>
-          <p class="area">Chest (upper)</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>3 x 15</dd></div>
-            <div><dt>Weight</dt><dd>7kg x2</dd></div>
-            <div><dt>Rest</dt><dd>60s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Slight elbow bend, wide arc, stop at chest stretch, never clank at top</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=idAvu2HvqSQ" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-      <article class="ex">
-        <div class="ex-num">3</div>
-        <div class="ex-body">
-          <h3>Decline push-ups (feet on bench)</h3>
-          <p class="area">Chest (upper) / Shoulders</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>3 x max reps</dd></div>
-            <div><dt>Weight</dt><dd>Bodyweight</dd></div>
-            <div><dt>Rest</dt><dd>45s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Straight line heels to head, chest near floor</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=SKPab2YC8BE" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-      <article class="ex">
-        <div class="ex-num">4</div>
-        <div class="ex-body">
-          <h3>Lateral raise</h3>
-          <p class="area">Shoulders (side delts)</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>3 x 15-20</dd></div>
-            <div><dt>Weight</dt><dd>7kg x2</dd></div>
-            <div><dt>Rest</dt><dd>60s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Thumbs slightly higher than pinkies, stop at shoulder height, no shrug</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=ssAo_xwFt5c" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-      <article class="ex">
-        <div class="ex-num">5</div>
-        <div class="ex-body">
-          <h3>Overhead tricep extension</h3>
-          <p class="area">Triceps</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>3 x 15</dd></div>
-            <div><dt>Weight</dt><dd>10kg (or 7kg if fatigued)</dd></div>
-            <div><dt>Rest</dt><dd>30s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Elbows tucked near head, lower behind head under control</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=O7e8j8K3cJo" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-      <article class="ex">
-        <div class="ex-num">6</div>
-        <div class="ex-body">
-          <h3>Side plank</h3>
-          <p class="area">Core / Obliques</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>3 x 30-40s/side</dd></div>
-            <div><dt>Weight</dt><dd>Bodyweight</dd></div>
-            <div><dt>Rest</dt><dd>30s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Hips lifted, straight line shoulders to feet</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=44ND4bOB-T0" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-    </div>
-  </section>
-  <section id="day3" class="panel">
-    <header class="panel-head">
-      <p class="eyebrow">Day D</p>
-      <h2>Legs+FullBody</h2>
-      <p class="lede">Legs + Full Body &middot; 6 exercises &middot; 5 min warm-up first</p>
-    </header>
-    <div class="ex-list">
-      <article class="ex">
-        <div class="ex-num">1</div>
-        <div class="ex-body">
-          <h3>Reverse lunge</h3>
-          <p class="area">Legs / Glutes</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>4 x 12/leg</dd></div>
-            <div><dt>Weight</dt><dd>Bodyweight or 7kg x2</dd></div>
-            <div><dt>Rest</dt><dd>60s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Step back, front knee over toes, back knee taps down softly</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=u_zSfK5ZFU4" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-      <article class="ex">
-        <div class="ex-num">2</div>
-        <div class="ex-body">
-          <h3>Step-ups</h3>
-          <p class="area">Legs / Glutes</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>3 x 15/leg</dd></div>
-            <div><dt>Weight</dt><dd>Bodyweight or 7kg x2</dd></div>
-            <div><dt>Rest</dt><dd>60s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Drive through the heel of the stepping leg, no push-off from back foot</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=DxUNi119Qzs" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-      <article class="ex">
-        <div class="ex-num">3</div>
-        <div class="ex-body">
-          <h3>Single-leg RDL</h3>
-          <p class="area">Hamstrings / Glutes / Balance</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>3 x 12/leg</dd></div>
-            <div><dt>Weight</dt><dd>7kg x2</dd></div>
-            <div><dt>Rest</dt><dd>60s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Hinge hips back, soft bend in standing knee, flat back</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=Zfr6wizR8rs" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-      <article class="ex">
-        <div class="ex-num">4</div>
-        <div class="ex-body">
-          <h3>Renegade rows</h3>
-          <p class="area">Back / Core / Shoulders</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>3 x 10/side</dd></div>
-            <div><dt>Weight</dt><dd>7kg x2</dd></div>
-            <div><dt>Rest</dt><dd>45s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Plank position, row without rotating hips</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=Q28cLuweLv4" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-      <article class="ex">
-        <div class="ex-num">5</div>
-        <div class="ex-body">
-          <h3>Thrusters</h3>
-          <p class="area">Full body (legs + shoulders)</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>3 x 15</dd></div>
-            <div><dt>Weight</dt><dd>7kg x2</dd></div>
-            <div><dt>Rest</dt><dd>45s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Squat down, drive up and press overhead in one motion</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=tJP-fwf5ASA" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-      <article class="ex">
-        <div class="ex-num">6</div>
-        <div class="ex-body">
-          <h3>Mountain climbers</h3>
-          <p class="area">Core / Cardio</p>
-          <dl class="specs">
-            <div><dt>Sets &times; reps</dt><dd>3 x 30s</dd></div>
-            <div><dt>Weight</dt><dd>Bodyweight</dd></div>
-            <div><dt>Rest</dt><dd>30s</dd></div>
-          </dl>
-          <p class="cue"><span>Form cue</span>Hands under shoulders, fast alternating knee drives, hips level</p>
-          <a class="vid" href="https://www.youtube.com/watch?v=Q_olQdxEPF4" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Form video</a>
-        </div>
-      </article>
-    </div>
-  </section>
+<div id="days"></div>
 
-<section id="log" class="panel">
+<section class="panel" id="p-log" role="tabpanel" hidden>
   <header class="panel-head">
     <p class="eyebrow">Tracker</p>
     <h2>Workout log</h2>
-    <p class="lede">Log every session &mdash; including walks and rest days. Saved in this browser only; nothing is uploaded.</p>
+    <p class="lede">Log every session &mdash; including walks and rest days. Paste watch / Health stats and sleep into the notes. Saved in this browser only; nothing is uploaded.</p>
   </header>
 
   <div class="card">
     <form class="logform" id="logform">
-
-        <label>Date<input type="date" id="f-date"></label>
-        <label>Day type<select id="f-type"><option>Day A - Push+Legs</option><option>Day B - Pull+Core</option><option>Day C - Chest+Shoulders</option><option>Day D - Legs+FullBody</option><option>Walk/Steps</option><option>Stairs</option><option>Rest Day</option><option>Other</option></select></label>
-        <label>Completed<select id="f-done"><option>Yes</option><option>Partial</option><option>No</option></select></label>
-        <label>Duration (min)<input type="number" id="f-dur" min="0" step="1" placeholder="45"></label>
-        <label>Calories<input type="number" id="f-cal" min="0" step="1" placeholder="—"></label>
-        <label>Avg HR<input type="number" id="f-hr" min="0" step="1" placeholder="—"></label>
-        <label class="wide">Soreness / pain notes<input type="text" id="f-sore" placeholder="Lower back a bit tight"></label>
-        <label class="wide">What I actually did<input type="text" id="f-did" placeholder="Full Day A, dropped to 7kg on squats"></label>
-        <label class="wide">General notes<input type="text" id="f-note" placeholder="Felt strong"></label>
+      <label>Date<input type="date" id="f-date"></label>
+      <label>Session<select id="f-type">
+        <option>Upper A (Sat)</option><option>Lower A (Sun)</option><option>Upper B (Tue)</option><option>Lower B (Fri)</option>
+        <option>Walk / steps</option><option>Stairs</option><option>Rest day</option><option>Other</option>
+      </select></label>
+      <label>Completed<select id="f-done"><option>Yes</option><option>Partial</option><option>No</option></select></label>
+      <label>Duration (min)<input type="number" id="f-dur" min="0" step="1" placeholder="50" inputmode="numeric"></label>
+      <label>Calories<input type="number" id="f-cal" min="0" step="1" placeholder="&mdash;" inputmode="numeric"></label>
+      <label>Avg HR<input type="number" id="f-hr" min="0" step="1" placeholder="&mdash;" inputmode="numeric"></label>
+      <label class="wide">Soreness / pain<input type="text" id="f-sore" placeholder="Lower back a bit tight"></label>
+      <label class="wide">What I actually did<input type="text" id="f-did" placeholder="Full Upper A, 2&times;10 on press, curls felt easy at 7.5"></label>
+      <label class="wide">Notes (watch stats, sleep, anything)<textarea id="f-note" placeholder="Paste Pixel Watch / Health stats, sleep, how it felt"></textarea></label>
     </form>
     <div class="actions">
       <button class="btn primary" id="add">Add entry</button>
       <button class="btn" id="csv">Export CSV</button>
       <button class="btn" id="clear">Clear all</button>
     </div>
-    <p class="warn" id="warn" hidden>This browser won&rsquo;t save data for files opened from disk (Safari blocks it), so entries last only until you close the page &mdash; use Export CSV to keep them, or open this file in Chrome.</p>
+    <p class="warn" id="warn" hidden>This browser won&rsquo;t save data for files opened from disk, so entries last only until you close the page &mdash; use Export CSV, or open the hosted version.</p>
   </div>
 
   <div class="card">
     <div class="stats" id="stats"></div>
     <div class="tablewrap">
       <table>
-        <thead><tr><th>Date</th><th>Day Type</th><th>Completed?</th><th>Duration (min)</th><th>Calories (if tracked)</th><th>Avg HR (if tracked)</th><th>Soreness / Pain Notes</th><th>What I Actually Did</th><th>General Notes</th><th></th></tr></thead>
+        <thead><tr><th>Date</th><th>Session</th><th>Done?</th><th>Min</th><th>Cal</th><th>Avg HR</th><th>Soreness / pain</th><th>What I did</th><th>Notes</th><th></th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
     </div>
@@ -683,52 +319,256 @@ footer { margin-top:34px; padding-top:18px; border-top:1px solid var(--line); fo
   </div>
 </section>
 
-<footer>Generated from Workout_Tracker.xlsx &middot; works offline &middot; video links need internet.</footer>
+<footer>Program v2 &middot; Oct 2026 &middot; works offline once loaded &middot; form videos are YouTube embeds and need internet.</footer>
 </div>
 
 <script>
-const HEADERS = ["Date", "Day Type", "Completed?", "Duration (min)", "Calories (if tracked)", "Avg HR (if tracked)", "Soreness / Pain Notes", "What I Actually Did", "General Notes"];
-const KEY = 'workout-log-v1';
-const $ = s => document.querySelector(s);
+/* ---------- Program ---------- */
+const V = {
+  flatPress:['5Y3VZsLb1Ys','Jack Hanrahan Fitness'], row1:['gfUg6qWohTk','ATHLEAN-X'], pushup:['zF0jbubK_jU','BuiltLean'],
+  curl:['XE_pHwbst04','Fit Father Project'], ohTri:['O7e8j8K3cJo','PrazeNation'], lateral:['ssAo_xwFt5c','Brendan Wong'],
+  bss:['hiLF_pF3EJM','ATHLEAN-X'], frontSquat:['hZI8Yy5elZs','NASM'], rdl:['aa57T45iFSE','NASM'], hipThrust:['29OfN4ztW_g','J2FIT'],
+  calf:['SVtg-1loH4c','Colossus Fitness'], deadBug:['bxn9FBrt4-A','NASM'],
+  ohp:['fuQpuu--bMI','That Fit Friend'], csRow:['llFTFDwmGcw','Colossus Fitness'], inclinePress:['awEEyL5zGvU','Colossus Fitness'],
+  rearDelt:['buuYPLVXsJg','Colossus Fitness'], hammer:['G7hy-AxQwcQ','Colossus Fitness'], skull:['8ncEJDm7Cig','Lean Physique Lab'],
+  slRdl:['Zfr6wizR8rs','Squat University'], revLunge:['u_zSfK5ZFU4','BuiltLean'], stepUp:['DxUNi119Qzs','PureGym'],
+  slHip:['jIO6wGeBLHE','Musician Fitness Trainer'], thruster:['tJP-fwf5ASA','J2FIT'], sidePlank:['44ND4bOB-T0','NASM'],
+};
+const WU_UPPER = '2 min march or stairs &middot; 20 arm circles each way &middot; 10 scapular push-ups &middot; 10 wall slides &middot; 1 feeder set of exercise 1 with 2&times;5.';
+const WU_LOWER = '2 min march or stairs &middot; 10 leg swings each way &middot; 15 bodyweight squats &middot; 10 glute bridges &middot; 1 feeder set of exercise 1 with bodyweight.';
 
-/* Panels switch with pure CSS; this only keeps the active-tab highlight in sync. */
-const states = [...document.querySelectorAll('.tabstate')];
-const syncTabs = () => states.forEach(r => {
-  const tab = document.querySelector(`.tab[for="${r.id}"]`);
-  if (tab) tab.classList.toggle('on', r.checked);
+const DAYS = [
+  { id:'upper-a', dow:6, short:'Sat', day:'Saturday', tag:'Upper A', title:'Chest, back, arms', time:'~50 min', rest:'75s big moves · 45s arms & delts', warm:WU_UPPER, ex:[
+    { n:'Flat dumbbell press', m:'Chest · triceps · front delts', sr:'4 × 8-15', w:'2×10', rest:'75s', v:V.flatPress,
+      prog:'8 → 15 reps, then: 3s lowering → 2s pause on the chest → 1.5 reps → 5 sets.',
+      cue:'Bench at 0°. Lower to the chest line with elbows ~45° from the torso, forearms vertical, press up and slightly in.' },
+    { n:'Single-arm row', m:'Back · biceps', sr:'4 × 10-15 / arm', w:'1×10', rest:'75s', v:V.row1,
+      prog:'2s squeeze at the top → 3s lowering → 5 sets.',
+      cue:'Hand and knee on the flat bench, back flat. Pull the elbow past your torso, no twisting.' },
+    { n:'Push-ups', m:'Chest · triceps · core', sr:'3 × max minus 2', w:'BW', rest:'60s', v:V.pushup,
+      prog:'3 × 20 clean → feet on the flat bench (decline) → 3s lowering.',
+      cue:'Done here while fresh, not after three chest moves. Hands under shoulders, elbows ~45°, body one line, chest to a fist from the floor.' },
+    { n:'Bicep curl', m:'Biceps', sr:'3 × 8-15', w:'2×7.5', rest:'45s', v:V.curl,
+      prog:'→ 2×10 → incline curl on the 45° bench with 2×7.5 → 2×10.',
+      cue:'Elbows pinned to your sides, no swing, lower all the way down.' },
+    { n:'Overhead tricep extension', m:'Triceps', sr:'3 × 10-15', w:'1×10', rest:'45s', v:V.ohTri,
+      prog:'3s lowering → skull crushers lying flat with 2×7.5 → 2×10.',
+      cue:'Seated on the 80° bench. Elbows pointing forward and close to the head, lower behind the head under control.' },
+    { n:'Lateral raise', m:'Side delts', sr:'3 × 12-20', w:'2×5', rest:'45s', v:V.lateral,
+      prog:'12 strict reps → 2×7.5 → 2×10 partials.',
+      cue:'Lead with the elbows, stop at shoulder height, no shrug. Slight forward lean.' },
+  ]},
+  { id:'lower-a', dow:0, short:'Sun', day:'Sunday', tag:'Lower A', title:'Quads, hamstrings, glutes, calves', time:'~55 min', rest:'90s compounds · 45s the rest', warm:WU_LOWER, ex:[
+    { n:'Bulgarian split squat', m:'Quads · glutes — main leg move', sr:'4 × 8-12 / leg', w:'2×7.5', rest:'90s', v:V.bss,
+      prog:'→ 2×10 → 3s lowering → pause at the bottom → 5 sets.',
+      cue:'Rear foot on the flat bench, front shin roughly vertical, drop straight down, drive through the front heel.' },
+    { n:'Front-rack squat', m:'Quads · glutes · core', sr:'3 × 12-20', w:'2×10', rest:'90s', v:V.frontSquat,
+      prog:'2s pause at the bottom → 1.5 reps → 3s down, 3s up.',
+      cue:'Dumbbells resting on the shoulders, elbows up, chest tall, sit between the knees, heels down.' },
+    { n:'Romanian deadlift', m:'Hamstrings · glutes', sr:'4 × 10-15', w:'2×10', rest:'90s', v:V.rdl,
+      prog:'3s lowering → 2s pause at the stretch → single-leg version (Lower B).',
+      cue:'Hinge at the hips with a flat back and soft knees, dumbbells slide down the thighs, stop when the hamstrings pull.' },
+    { n:'Hip thrust', m:'Glutes', sr:'3 × 12-20', w:'2×10', rest:'60s', v:V.hipThrust,
+      prog:'2s squeeze at the top → single-leg with 1×10.',
+      cue:'Upper back on the flat bench, dumbbells on the hips, chin tucked, drive the heels, finish with ribs down and glutes squeezed.' },
+    { n:'Calf raise', m:'Calves', sr:'3 × 15-20', w:'2×10', rest:'45s', v:V.calf,
+      prog:'Single-leg with 1×10 → 2s pause at the top.',
+      cue:'Toes on a step, full stretch at the bottom, pause at the top.' },
+    { n:'Dead bug', m:'Core', sr:'3 × 10 / side', w:'BW', rest:'45s', v:V.deadBug,
+      prog:'→ hollow hold 3 × 20-40s.',
+      cue:'Lower back pressed into the floor, exhale as the opposite arm and leg extend, slow.' },
+    { n:'Lateral raise', m:'Side delts — delts like frequency', sr:'3 × 15-20', w:'2×5', rest:'45s', v:V.lateral,
+      prog:'Same ladder as Upper A.',
+      cue:'Lead with the elbows, stop at shoulder height, no shrug.' },
+  ]},
+  { id:'upper-b', dow:2, short:'Tue', day:'Tuesday', tag:'Upper B', title:'Shoulders, back, arms', time:'~55 min', rest:'75s big moves · 45s arms & delts', warm:WU_UPPER, ex:[
+    { n:'Seated shoulder press', m:'Shoulders · triceps', sr:'4 × 8-15', w:'2×10', rest:'75s', v:V.ohp,
+      prog:'2s pause at the bottom → 3s lowering → standing → 1.5 reps.',
+      cue:'Bench at 80°. Start at ear height, press up and slightly back, ribs down, no arching.' },
+    { n:'Chest-supported row', m:'Upper back · lats · biceps — fixes back volume', sr:'4 × 10-15', w:'2×7.5', rest:'75s', v:V.csRow,
+      prog:'→ 2×10 → 2s squeeze → 3s lowering.',
+      cue:'Lie face down on the 30-45° bench, chest on the pad. Row the elbows back and squeeze the shoulder blades, don’t lift the chest off.' },
+    { n:'Incline dumbbell press', m:'Upper chest · front delts', sr:'3 × 8-15', w:'2×10', rest:'75s', v:V.inclinePress,
+      prog:'Same ladder as the flat press.',
+      cue:'Bench at 30°. Lower to the upper chest, control the descent.' },
+    { n:'Lateral raise', m:'Side delts', sr:'4 × 12-20', w:'2×5', rest:'45s', v:V.lateral,
+      prog:'→ 2×7.5 strict → 2×10 partials.',
+      cue:'Lead with the elbows, stop at shoulder height, no shrug.' },
+    { n:'Rear delt fly', m:'Rear delts · upper back', sr:'3 × 8-15', w:'2×5', rest:'45s', v:V.rearDelt,
+      prog:'8 strict → build to 15 → 2×7.5.',
+      cue:'Face down on the 30° bench. Arms out to the sides with a soft elbow, pinkies up, squeeze the shoulder blades. 5 kg is the right weight here — fewer strict reps beat swinging.' },
+    { n:'Hammer curl', m:'Biceps · forearms', sr:'3 × 10-15', w:'2×7.5', rest:'45s', v:V.hammer,
+      prog:'→ 2×10 → 3s lowering.',
+      cue:'Palms facing each other, elbows still, no swing.' },
+    { n:'Skull crusher', m:'Triceps', sr:'3 × 10-15', w:'2×7.5', rest:'45s', v:V.skull,
+      prog:'→ 2×10 → 3s lowering.',
+      cue:'Lying on the flat bench. Upper arms vertical and still, lower to the sides of the head, extend.' },
+  ]},
+  { id:'lower-b', dow:5, short:'Fri', day:'Friday', tag:'Lower B', title:'Hinge, single-leg, conditioning', time:'~50 min', rest:'75s compounds · 45s the rest', warm:WU_LOWER, ex:[
+    { n:'Single-leg RDL', m:'Hamstrings · glutes · balance', sr:'3 × 10-12 / leg', w:'1×10', rest:'75s', v:V.slRdl,
+      prog:'→ 2×7.5 → 2×10 → 3s lowering.',
+      cue:'Dumbbell in the opposite hand, other hand on the bench for balance. Hinge, back leg long, hips square.' },
+    { n:'Reverse lunge', m:'Quads · glutes', sr:'3 × 10-12 / leg', w:'2×7.5', rest:'75s', v:V.revLunge,
+      prog:'→ 2×10 → 3s lowering.',
+      cue:'Step back, front shin vertical, back knee taps softly, drive through the front heel.' },
+    { n:'Step-ups', m:'Quads · glutes', sr:'3 × 10-12 / leg', w:'2×5', rest:'60s', v:V.stepUp,
+      prog:'→ 2×7.5 → 2×10 → 3s lowering.',
+      cue:'Flat bench. Drive through the top heel, no push-off from the floor foot, lower slowly.' },
+    { n:'Single-leg hip thrust', m:'Glutes', sr:'3 × 10-15 / leg', w:'BW', rest:'60s', v:V.slHip,
+      prog:'→ 1×5 on the hip → 1×10.',
+      cue:'Upper back on the flat bench, one foot planted, other knee up. Ribs down, drive the heel, squeeze.' },
+    { n:'Thrusters', m:'Legs · shoulders · conditioning', sr:'3 × 12-15', w:'2×7.5', rest:'60s', v:V.thruster,
+      prog:'→ 2×10 → shorter rest.',
+      cue:'Dumbbells on the shoulders, squat, drive up and press overhead in one motion.' },
+    { n:'Side plank', m:'Obliques · core', sr:'3 × 30-45s / side', w:'BW', rest:'45s', v:V.sidePlank,
+      prog:'Feet on the bench → hip dips.',
+      cue:'Elbow under the shoulder, hips high, body one straight line.' },
+    { n:'Bicep curl — finisher', m:'Biceps', sr:'2 × 12', w:'2×7.5', rest:'30s', v:V.curl,
+      prog:'Follow the Upper A ladder.',
+      cue:'Strict, slow lowering.' },
+    { n:'Overhead tricep extension — finisher', m:'Triceps', sr:'2 × 12', w:'1×10', rest:'30s', v:V.ohTri,
+      prog:'Follow the Upper A ladder.',
+      cue:'Strict, slow lowering.' },
+  ]},
+];
+const WEEK = [
+  { d:'Sat', sess:'upper-a' }, { d:'Sun', sess:'lower-a' }, { d:'Mon', k:'office', t:'walk' },
+  { d:'Tue', sess:'upper-b' }, { d:'Wed', k:'office', t:'walk' }, { d:'Thu', k:'office', t:'stairs + walk' }, { d:'Fri', sess:'lower-b' },
+];
+const DOW = { Sat:6, Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5 };
+
+/* ---------- Helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ls = {
+  get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } },
+};
+const ss = {
+  get: k => { try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+  set: (k, v) => { try { sessionStorage.setItem(k, v); } catch (e) {} },
+};
+const weight = w => w === 'BW' ? 'Bodyweight'
+  : w.startsWith('2×') ? `${w.slice(2)} kg <small>each hand</small>`
+  : w.startsWith('1×') ? `${w.slice(2)} kg <small>one dumbbell</small>` : esc(w);
+const ytHTML = ([id, by]) =>
+  `<img loading="lazy" src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="">` +
+  `<button class="play" aria-label="Play form video"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>` +
+  `<span class="cap">Form video &middot; ${esc(by)}</span>`;
+
+/* ---------- Render ---------- */
+const TABS = [{ id:'overview', label:'Overview' }, ...DAYS.map(d => ({ id:d.id, label:`${d.short} · ${d.tag}` })), { id:'log', label:'Log' }];
+$('#tabs').innerHTML = TABS.map(t =>
+  `<button class="tab" role="tab" data-tab="${t.id}" aria-selected="false" aria-controls="p-${t.id}">${esc(t.label)}</button>`).join('');
+
+$('#days').innerHTML = DAYS.map(d => `
+  <section class="panel" id="p-${d.id}" role="tabpanel" hidden>
+    <header class="panel-head">
+      <p class="eyebrow">${d.day} &middot; ${esc(d.tag)}</p>
+      <h2>${esc(d.title)}</h2>
+      <p class="lede">${d.ex.length} exercises &middot; ${esc(d.time)} &middot; rest ${esc(d.rest)}</p>
+    </header>
+    <div class="card"><p class="warmup"><b>Warm-up, 5 min:</b> ${d.warm}</p></div>
+    <div class="ex-list">
+      ${d.ex.map((e, i) => `
+      <article class="ex">
+        <div class="ex-num">${i + 1}</div>
+        <div class="ex-body">
+          <h3>${esc(e.n)}</h3>
+          <p class="area">${esc(e.m)}</p>
+          <dl class="specs">
+            <div><dt>Sets &times; reps</dt><dd>${esc(e.sr)}</dd></div>
+            <div class="w"><dt>Start</dt><dd>${weight(e.w)}</dd></div>
+            <div><dt>Rest</dt><dd>${esc(e.rest)}</dd></div>
+          </dl>
+          <p class="cue prog"><span>Progress</span>${esc(e.prog)}</p>
+          <p class="cue"><span>Form cue</span>${esc(e.cue)}</p>
+          <div class="yt" data-yt="${e.v[0]}" data-by="${esc(e.v[1])}">${ytHTML(e.v)}</div>
+        </div>
+      </article>`).join('')}
+    </div>
+  </section>`).join('');
+
+const today = new Date().getDay();
+$('#week').innerHTML = WEEK.map(w => {
+  const day = w.sess && DAYS.find(d => d.id === w.sess);
+  const cls = 'wd' + (day ? ' sess' : '') + (DOW[w.d] === today ? ' today' : '');
+  return day
+    ? `<a class="${cls}" href="#${day.id}"><b>${w.d}</b><span class="l">${esc(day.tag)}</span><span class="s">${esc(day.tag.replace('Upper', 'Up').replace('Lower', 'Low'))}</span><span class="k">${esc(day.title.split(',')[0])}</span></a>`
+    : `<div class="${cls}"><b>${w.d}</b><span class="k ${w.k}">${w.k}</span><span class="l">${esc(w.t)}</span><span class="s">${esc(w.t.split(' ')[0])}</span></div>`;
+}).join('');
+
+/* ---------- Tabs: URL hash + localStorage, scroll position per tab ---------- */
+const panels = [...document.querySelectorAll('.panel')];
+const tabs = [...document.querySelectorAll('.tab')];
+let current = null;
+function stopVideos(panel) {
+  panel.querySelectorAll('.yt iframe').forEach(f => {
+    const y = f.parentElement; y.innerHTML = ytHTML([y.dataset.yt, y.dataset.by]);
+  });
+}
+function showTab(id, opts = {}) {
+  if (!TABS.some(t => t.id === id)) id = 'overview';
+  if (id === current) return;
+  if (current) { ss.set('scroll:' + current, String(scrollY)); stopVideos($('#p-' + current)); }
+  current = id;
+  panels.forEach(p => p.hidden = p.id !== 'p-' + id);
+  tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.tab === id)));
+  const t = tabs.find(t => t.dataset.tab === id);
+  if (t) t.scrollIntoView({ block:'nearest', inline:'center' });
+  if (!opts.silent) history.replaceState(null, '', '#' + id);
+  ls.set('tab', id);
+  const y = +ss.get('scroll:' + id) || 0;
+  requestAnimationFrame(() => scrollTo({ top:y, behavior:'instant' }));
+}
+tabs.forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
+addEventListener('hashchange', () => showTab(location.hash.slice(1), { silent:true }));
+let ticking = false;
+addEventListener('scroll', () => {
+  if (ticking || !current) return; ticking = true;
+  requestAnimationFrame(() => { ss.set('scroll:' + current, String(scrollY)); ticking = false; });
+}, { passive:true });
+showTab(location.hash.slice(1) || ls.get('tab') || 'overview', { silent:!location.hash });
+
+/* Form videos: thumbnail until tapped, then an inline YouTube player. */
+document.addEventListener('click', e => {
+  const y = e.target.closest('.yt');
+  if (!y || y.querySelector('iframe')) return;
+  y.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${y.dataset.yt}?autoplay=1&rel=0&playsinline=1&modestbranding=1" ` +
+    `title="Form video" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
 });
-states.forEach(r => r.addEventListener('change', syncTabs));
-syncTabs();
-/* Safari refuses localStorage on file:// URLs, so entries are held in memory and
-   persisted only if the browser allows it — the log keeps working either way. */
+
+/* Re-entry banner */
+if (!ls.get('reentry-done')) $('#reentry').hidden = false;
+$('#reentry-done').addEventListener('click', () => { ls.set('reentry-done', '1'); $('#reentry').hidden = true; });
+
+/* ---------- Log ---------- */
+const HEADERS = ['Date', 'Session', 'Completed', 'Duration (min)', 'Calories', 'Avg HR', 'Soreness / pain', 'What I actually did', 'Notes'];
+const KEY = 'workout-log-v1';
+const FIELDS = ['#f-date', '#f-type', '#f-done', '#f-dur', '#f-cal', '#f-hr', '#f-sore', '#f-did', '#f-note'];
+/* Entries are held in memory and persisted only if the browser allows it (Safari on file:// doesn't). */
 let mem = null;
 const load = () => {
   if (!mem) { try { mem = JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { mem = []; } }
   return mem;
 };
-const save = rows => {
-  mem = rows;
-  try { localStorage.setItem(KEY, JSON.stringify(rows)); }
-  catch (e) { $('#warn').hidden = false; }
-};
-const FIELDS = ['#f-date','#f-type','#f-done','#f-dur','#f-cal','#f-hr','#f-sore','#f-did','#f-note'];
+const save = rows => { mem = rows; if (!ls.set(KEY, JSON.stringify(rows))) $('#warn').hidden = false; };
 
 function render() {
   const rows = load().sort((a, b) => (b[0] || '').localeCompare(a[0] || ''));
   const tb = $('#rows');
   tb.innerHTML = '';
   $('#empty').style.display = rows.length ? 'none' : 'block';
-
-  rows.forEach((r, i) => {
+  rows.forEach(r => {
     const tr = document.createElement('tr');
     r.forEach((v, c) => {
       const td = document.createElement('td');
       if (c === 2 && v) {
         const s = document.createElement('span');
         s.className = 'pill ' + (v === 'Yes' ? 'yes' : v === 'No' ? 'no' : '');
-        s.textContent = v;
-        td.appendChild(s);
+        s.textContent = v; td.appendChild(s);
       } else {
+        if (c >= 6) td.className = 'note';
         td.textContent = v || '—';
       }
       tr.appendChild(td);
@@ -737,10 +577,8 @@ function render() {
     const b = document.createElement('button');
     b.className = 'del'; b.textContent = '×'; b.title = 'Delete entry';
     b.onclick = () => { const all = load(); all.splice(all.indexOf(r), 1); save(all); render(); };
-    td.appendChild(b); tr.appendChild(td);
-    tb.appendChild(tr);
+    td.appendChild(b); tr.appendChild(td); tb.appendChild(tr);
   });
-
   const done = rows.filter(r => r[2] === 'Yes').length;
   const mins = rows.reduce((s, r) => s + (parseInt(r[3], 10) || 0), 0);
   $('#stats').innerHTML =
@@ -757,25 +595,25 @@ $('#add').addEventListener('click', ev => {
   FIELDS.slice(3).forEach(f => $(f).value = '');
   render();
 });
-
 $('#csv').addEventListener('click', ev => {
   ev.preventDefault();
-  const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const csv = [HEADERS, ...load()].map(r => r.map(esc).join(',')).join('\n');
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const csv = [HEADERS, ...load()].map(r => r.map(q).join(',')).join('\n');
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-  a.download = 'workout-log.csv';
-  a.click();
-  URL.revokeObjectURL(a.href);
+  a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv' }));
+  a.download = 'workout-log.csv'; a.click(); URL.revokeObjectURL(a.href);
 });
-
 $('#clear').addEventListener('click', ev => {
   ev.preventDefault();
   if (confirm('Delete every logged entry? This cannot be undone.')) { save([]); render(); }
 });
-
 $('#f-date').value = new Date().toISOString().slice(0, 10);
 render();
+
+/* ---------- PWA ---------- */
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
 </script>
 </body>
 </html>
