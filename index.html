@@ -27,7 +27,7 @@ body {
   font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   -webkit-text-size-adjust:100%;
 }
-.wrap { max-width:920px; margin:0 auto; padding:0 16px calc(80px + env(safe-area-inset-bottom)); }
+.wrap { max-width:920px; margin:0 auto; padding:0 16px calc(110px + env(safe-area-inset-bottom)); }
 h1,h2,h3 { line-height:1.2; letter-spacing:-.015em; margin:0; }
 p { margin:0; }
 a { color:var(--accent); }
@@ -60,7 +60,6 @@ nav.tabs::-webkit-scrollbar { display:none; }
 .tab:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 
 .panel { animation:rise .25s ease both; }
-.panel[hidden] { display:none; }
 @keyframes rise { from { opacity:0; transform:translateY(6px); } }
 .panel-head { margin-bottom:20px; }
 .eyebrow { font-size:12px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--accent); }
@@ -72,33 +71,33 @@ nav.tabs::-webkit-scrollbar { display:none; }
   padding:20px; box-shadow:var(--shadow); margin-bottom:16px;
 }
 .card h2 { font-size:17px; margin-bottom:12px; }
+.card h2 small { font-weight:500; color:var(--ink-3); font-size:13px; margin-left:6px; }
 .card.accent { border-color:color-mix(in srgb,var(--accent) 45%,var(--line)); background:linear-gradient(180deg,var(--accent-soft),var(--surface)); }
 .card.accent h2 { color:var(--accent); }
 
-.week { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
-.wd {
-  display:flex; flex-direction:column; gap:4px; align-items:center; text-align:center; position:relative;
-  padding:10px 4px; border-radius:11px; border:1px solid var(--line); background:var(--surface-2);
-  color:var(--ink-2); font-size:11.5px; line-height:1.25; text-decoration:none; cursor:default;
+/* This week: four session tiles */
+.wk { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.wk a {
+  display:flex; flex-direction:column; gap:3px; padding:12px 10px; border-radius:11px; text-decoration:none; position:relative;
+  border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line)); background:var(--surface-2); color:var(--ink-2); font-size:12.5px; line-height:1.3;
 }
-.wd b { font-size:13px; color:var(--ink); letter-spacing:.02em; }
-.wd.sess { border-color:color-mix(in srgb,var(--accent) 40%,var(--line)); cursor:pointer; }
-.wd.sess:hover { border-color:var(--accent); }
-.wd.sess b { color:var(--accent); }
-.wd.today { outline:2px solid var(--ok); outline-offset:1px; }
-.wd.logged::after { content:'✓'; position:absolute; top:4px; right:6px; font-size:11px; color:var(--ok); font-weight:700; }
-.wd .k { font-size:10.5px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.06em; }
-.wd .k.office { color:var(--warn); }
-.wd .s { display:none; }
+.wk a:hover { border-color:var(--accent); }
+.wk a b { color:var(--accent); font-size:14px; }
+.wk a.logged { border-color:color-mix(in srgb,var(--ok) 50%,var(--line)); }
+.wk a.logged b { color:var(--ok); }
+.wk a.logged::after { content:'✓'; position:absolute; top:8px; right:10px; color:var(--ok); font-weight:700; }
+.wk a .d { color:var(--ink-3); font-size:11.5px; }
 
 ul.notes { margin:0; padding-left:20px; display:grid; gap:9px; color:var(--ink-2); font-size:15px; }
 ul.notes strong { color:var(--ink); }
 .btnrow { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
 
-.warmup { font-size:14px; color:var(--ink-2); }
-.warmup b { color:var(--ink); }
+/* Warm-up / cool-down */
+ol.steps { margin:0; padding-left:22px; display:grid; gap:7px; color:var(--ink-2); font-size:14.5px; }
+ol.steps b { color:var(--ink); font-weight:600; }
+.steps-note { font-size:13px; color:var(--ink-3); margin-top:10px; }
 
-/* Session card on each day sheet */
+/* Session card on each sheet */
 .sess-top { display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap; }
 .sess-top b { font-size:16px; }
 .sess-top span { font-size:13px; color:var(--ink-2); }
@@ -144,6 +143,15 @@ details.more textarea { margin-top:10px; }
 .specs dd { margin:2px 0 0; font-size:14.5px; font-weight:650; }
 .specs dd small { font-weight:500; color:var(--ink-2); font-size:12px; }
 .specs .w dd { color:var(--accent); }
+.specs .r { padding:0; background:none; }
+.specs .r button.rest {
+  display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; height:100%;
+  padding:7px 11px; border-radius:9px; cursor:pointer; border:1px solid var(--line); background:var(--surface-2); color:var(--ink);
+}
+.specs .r button.rest dt { color:var(--ink-3); }
+.specs .r button.rest dd { color:var(--ok); }
+.specs .r button.rest dd::after { content:' ▶'; font-size:11px; }
+.specs .r button.rest:hover { border-color:var(--ok); }
 .cue { font-size:14px; color:var(--ink-2); margin-top:12px; }
 .cue span {
   display:block; font-size:11px; font-weight:700; letter-spacing:.06em;
@@ -153,6 +161,19 @@ details.more textarea { margin-top:10px; }
 .last { font-size:13px; color:var(--ink-3); margin-top:10px; }
 .last b { color:var(--ink-2); font-weight:600; }
 .last .up { color:var(--ok); font-weight:600; }
+
+/* Rest timer bar */
+.timer {
+  position:fixed; left:50%; bottom:calc(14px + env(safe-area-inset-bottom)); transform:translateX(-50%); z-index:20;
+  display:flex; align-items:center; gap:12px; padding:10px 12px 10px 16px; border-radius:999px; max-width:calc(100% - 24px);
+  background:#0f2a1a; border:1px solid var(--ok); color:var(--ink); box-shadow:0 12px 32px -8px rgba(0,0,0,.9);
+  animation:rise .2s ease both;
+}
+.timer b { font-size:26px; font-variant-numeric:tabular-nums; color:var(--ok); min-width:2.4ch; }
+.timer .for { font-size:12.5px; color:var(--ink-2); max-width:34vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.timer button { border:1px solid var(--line); background:var(--surface-2); color:var(--ink); border-radius:999px; padding:6px 11px; font-size:13px; font-weight:650; cursor:pointer; }
+.timer.go { background:var(--accent-soft); border-color:var(--accent); }
+.timer.go b { color:var(--accent); }
 
 /* Per-exercise logging */
 .log { margin-top:14px; }
@@ -233,6 +254,11 @@ details.more textarea { margin-top:10px; }
 .del { background:none; border:0; color:var(--ink-3); cursor:pointer; font-size:16px; line-height:1; padding:2px 6px; border-radius:6px; }
 .del:hover { background:var(--bad-soft); color:var(--bad); }
 .empty { color:var(--ink-3); font-size:14.5px; padding:22px 0; text-align:center; }
+.toast {
+  position:fixed; left:50%; top:calc(14px + env(safe-area-inset-top)); transform:translateX(-50%); z-index:30; max-width:calc(100% - 24px);
+  padding:10px 16px; border-radius:999px; background:var(--ok-soft); border:1px solid var(--ok); color:var(--ok); font-size:14px; font-weight:600;
+  box-shadow:0 12px 32px -8px rgba(0,0,0,.9); animation:rise .2s ease both;
+}
 
 form.logform { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:12px; }
 form.logform label { display:flex; flex-direction:column; gap:5px; font-size:12.5px; font-weight:600; color:var(--ink-2); }
@@ -262,15 +288,11 @@ footer { margin-top:34px; padding-top:18px; border-top:1px solid var(--line); fo
   .ex { padding:14px; gap:12px; }
   form.logform { grid-template-columns:1fr 1fr; }
   .card { padding:16px; }
-  .week { gap:4px; }
-  .wd { padding:8px 2px; font-size:10.5px; min-width:0; }
-  .wd span { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .wd .k, .wd .l { display:none; }
-  .wd .s { display:block; }
+  .wk { grid-template-columns:1fr 1fr; }
   .logbar button { flex:1 1 auto; text-align:center; }
 }
 @media print {
-  nav.tabs, .actions, .del, .yt, .btnrow, .log { display:none !important; }
+  nav.tabs, .actions, .del, .yt, .btnrow, .log, .timer { display:none !important; }
   .panel[hidden] { display:block !important; }
   .panel { animation:none; }
   body { background:#fff; color:#000; }
@@ -283,11 +305,11 @@ footer { margin-top:34px; padding-top:18px; border-top:1px solid var(--line); fo
 
 <header class="top">
   <h1>Workout Tracker</h1>
-  <p class="sub">Upper / Lower &times; 2 &middot; week starts Saturday &middot; home dumbbells and an adjustable bench. Goal: drop fat, grow arms and shoulders, every muscle twice a week.</p>
+  <p class="sub">Upper / Lower &times; 2 &mdash; four sessions a week, on whatever days work. Home dumbbells and an adjustable bench. Goal: drop fat, grow arms and shoulders, every muscle twice a week.</p>
   <div class="chips">
+    <span class="chip">4 sessions / week</span>
     <span class="chip">5 &middot; 7.5 &middot; 10 kg pairs</span>
     <span class="chip">Bench &minus;15&deg; to 80&deg;</span>
-    <span class="chip">Week starts Sat</span>
     <span class="chip">Home &middot; no gym</span>
   </div>
 </header>
@@ -307,30 +329,39 @@ footer { margin-top:34px; padding-top:18px; border-top:1px solid var(--line); fo
   </div>
 
   <div class="card">
-    <h2>This week</h2>
-    <div class="week" id="week"></div>
-    <p class="lede" style="margin-top:12px">Sat and Sun are the anchors &mdash; together they hit every muscle. Tue and Fri add the second dose. Office days are walk days.</p>
+    <h2>This week <small id="wk-range"></small></h2>
+    <div class="wk" id="week"></div>
+    <p class="lede" style="margin-top:12px">Four sessions, any days, any order. The week resets every Saturday. If you can only do two: Upper A + Lower A.</p>
+  </div>
+
+  <div class="card">
+    <h2>Placing the sessions</h2>
+    <ul class="notes">
+      <li>Never two lifting sessions on the same day. A day between the two upper sessions (and between the two lower ones) is ideal, not required.</li>
+      <li>Alternate when you can: upper, lower, upper, lower. Back-to-back days are fine &mdash; different muscles.</li>
+      <li><strong>Short on time</strong> &rarr; first 4 exercises, then stop. 30 minutes beats zero.</li>
+      <li>Off days: walk. 10-12k steps/day, stairs 2-3&times;/week for 10-15 min.</li>
+      <li>Missed sessions don&rsquo;t roll over. Saturday starts fresh at Upper A.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Rest, simply</h2>
+    <ul class="notes">
+      <li>Every exercise shows <strong>Rest between sets</strong>. Finish a set, tap it, a countdown appears at the bottom and buzzes when it&rsquo;s time. That is the only rest you take.</li>
+      <li>Between exercises: the same rest as the last set, no more. Set up the bench during it.</li>
+      <li>Big moves get 75-90s, arms and delts 45s, core 30-45s. Longer rest doesn&rsquo;t make the set better; it makes the session longer.</li>
+    </ul>
   </div>
 
   <div class="card">
     <h2>Progression rule</h2>
     <ul class="notes">
       <li>Every exercise lists a <strong>start weight</strong> and a <strong>rep range</strong>. <code>2&times;10</code> means 10 kg in each hand, <code>1&times;10</code> one dumbbell.</li>
-      <li>Work inside the range. When <strong>every set</strong> hits the top of the range with 1-2 reps still in the tank &rarr; next dumbbell, reps drop back to the bottom.</li>
+      <li>Work inside the range. When <strong>every set</strong> hits the top of the range with 1-2 reps still in the tank &rarr; next dumbbell, reps drop back to the bottom. <strong>Type the reps</strong> when you hit the top so the app can tell you.</li>
       <li>Ladder: <strong>5 &rarr; 7.5 &rarr; 10</strong>. At 10 kg and the top of the range, follow the exercise&rsquo;s <strong>Progress</strong> line (slower lowering, pauses, 1.5 reps, harder variation, extra set).</li>
       <li>Form first. A rep that needs a swing, a shrug or an arch doesn&rsquo;t count.</li>
       <li>Presses and squats will cap out at 10 kg within ~6-8 weeks. A 12.5 kg pair is the single best upgrade when that happens.</li>
-    </ul>
-  </div>
-
-  <div class="card">
-    <h2>Missed a day?</h2>
-    <ul class="notes">
-      <li><strong>Missed Tue</strong> &rarr; do Upper B on Wed or Thu evening if you can. Otherwise it&rsquo;s gone.</li>
-      <li><strong>Missed Fri</strong> &rarr; gone. Sat/Sun stay Upper A / Lower A, always. Never shift the anchor.</li>
-      <li>Never stack two lifting sessions on one day.</li>
-      <li><strong>Busy evening</strong> &rarr; do the first 4 exercises of Upper B / Lower B and stop. 30 minutes beats zero.</li>
-      <li>The cycle resets every Saturday no matter what happened.</li>
     </ul>
   </div>
 
@@ -339,7 +370,7 @@ footer { margin-top:34px; padding-top:18px; border-top:1px solid var(--line); fo
     <ul class="notes">
       <li>Love handles, belly and chest fat come off through a <strong>calorie deficit + daily steps</strong>, not through exercises aimed at them. No weighted side bends &mdash; they thicken the waist.</li>
       <li>Lifting changes the <strong>shape</strong>: upper chest, wide side delts and bigger arms make the chest look tighter and the waist smaller as fat drops.</li>
-      <li>Targets: <strong>~0.5 kg/week</strong> down, <strong>10-12k steps/day</strong> floor, <strong>1.6-2 g protein per kg</strong> (paneer, dal, soy, curd, whey). Stairs 2-3&times;/week, 10-15 min.</li>
+      <li>Targets: <strong>~0.5 kg/week</strong> down, <strong>10-12k steps/day</strong> floor, <strong>1.6-2 g protein per kg</strong> (paneer, dal, soy, curd, whey).</li>
       <li>Weigh daily, judge by the weekly average.</li>
     </ul>
   </div>
@@ -347,8 +378,9 @@ footer { margin-top:34px; padding-top:18px; border-top:1px solid var(--line); fo
   <div class="card">
     <h2>Using this page</h2>
     <ul class="notes">
-      <li>Open the day&rsquo;s sheet and tap <strong>Done</strong> under each exercise as you finish it &mdash; the tap time is the workout time. <strong>Modified</strong> if you changed weight, sets or reps; <strong>Couldn&rsquo;t</strong> if the body gave up. Nothing else is required.</li>
+      <li>Open a session and tap <strong>Done</strong> under each exercise as you finish it &mdash; the tap time is the workout time. <strong>Modified</strong> if you changed weight, sets or reps; <strong>Couldn&rsquo;t</strong> if the body gave up. Nothing else is required.</li>
       <li>When every exercise has a status the <strong>session summary</strong> writes itself and lands in the Log. Add how you felt or paste watch / sleep stats only if you want to.</li>
+      <li><strong>Watch stats:</strong> share any text to <em>Workout</em> from Android&rsquo;s share sheet (works once the app is installed) and it attaches itself to that day&rsquo;s session.</li>
       <li>Form videos play right here (they need internet; everything else works offline). The page remembers which tab you were on.</li>
       <li><strong>Install it:</strong> Chrome on Android &rarr; &#8942; menu &rarr; <em>Add to Home screen</em>.</li>
     </ul>
@@ -361,7 +393,7 @@ footer { margin-top:34px; padding-top:18px; border-top:1px solid var(--line); fo
   <header class="panel-head">
     <p class="eyebrow">Tracker</p>
     <h2>Log</h2>
-    <p class="lede">Every session, written automatically from what you tapped on the day sheets. Saved in this browser and, once connected, in your own GitHub gist.</p>
+    <p class="lede">Every session, written automatically from what you tapped on the sheets. Saved in this browser and, once connected, in your own GitHub gist.</p>
   </header>
 
   <div class="card">
@@ -406,6 +438,13 @@ footer { margin-top:34px; padding-top:18px; border-top:1px solid var(--line); fo
 <footer>Program v2 &middot; Oct 2026 &middot; works offline once loaded &middot; form videos are YouTube embeds and need internet.</footer>
 </div>
 
+<div class="timer" id="timer" hidden>
+  <b id="t-left">75</b>
+  <span class="for" id="t-for"></span>
+  <button id="t-add" type="button">+15s</button>
+  <button id="t-stop" type="button" aria-label="Stop timer">✕</button>
+</div>
+
 <script>
 /* ---------- Program ---------- */
 const V = {
@@ -418,20 +457,51 @@ const V = {
   slRdl:['Zfr6wizR8rs','Squat University'], revLunge:['u_zSfK5ZFU4','BuiltLean'], stepUp:['DxUNi119Qzs','PureGym'],
   slHip:['jIO6wGeBLHE','Musician Fitness Trainer'], thruster:['tJP-fwf5ASA','J2FIT'], sidePlank:['44ND4bOB-T0','NASM'],
 };
-const WU_UPPER = '2 min march or stairs &middot; 20 arm circles each way &middot; 10 scapular push-ups &middot; 10 wall slides &middot; 1 feeder set of exercise 1 with 2&times;5.';
-const WU_LOWER = '2 min march or stairs &middot; 10 leg swings each way &middot; 15 bodyweight squats &middot; 10 glute bridges &middot; 1 feeder set of exercise 1 with bodyweight.';
+/* Warm-ups are dynamic (moving), cool-downs are static holds — never the other way round. */
+const WU_UPPER = [
+  '<b>2 min</b> march on the spot or stairs — until you feel warm.',
+  '<b>Arm circles</b> 10 forward, 10 back, small to big.',
+  '<b>Shoulder rolls</b> 10 back, then <b>cat-cow</b> 8 slow reps on all fours.',
+  '<b>Scapular push-ups</b> 10 — plank position, only the shoulder blades move.',
+  '<b>Wall slides</b> 10 — back and arms on the wall, slide up and down.',
+  '<b>Feeder set</b>: exercise 1 with 2×5, 10 easy reps. Then start.',
+];
+const WU_LOWER = [
+  '<b>2 min</b> march on the spot or stairs — until you feel warm.',
+  '<b>Leg swings</b> 10 forward/back and 10 side to side, each leg, hand on the wall.',
+  '<b>Hip circles</b> 8 each way, then <b>bodyweight squats</b> 15, slow.',
+  '<b>Glute bridges</b> 10 with a 2s squeeze at the top.',
+  '<b>Walking lunges</b> 6 per leg, bodyweight.',
+  '<b>Feeder set</b>: exercise 1 with bodyweight, 8 easy reps. Then start.',
+];
+const CD_UPPER = [
+  '<b>Doorway chest stretch</b> — forearm on the frame, step through. 30s each side.',
+  '<b>Overhead tricep stretch</b> — elbow up, hand down the back, other hand pulls gently. 30s each arm.',
+  '<b>Cross-body shoulder stretch</b> — arm across the chest. 30s each.',
+  '<b>Lat stretch</b> — hold the bench or door frame, sit the hips back. 30s each side.',
+  '<b>Forearm stretch</b> — arm straight, palm up, pull the fingers back. 20s each.',
+  '<b>Child’s pose</b> — 45s, breathe out slowly.',
+];
+const CD_LOWER = [
+  '<b>Kneeling hip flexor stretch</b> — back knee down, squeeze that glute, push hips forward. 30s each side.',
+  '<b>Hamstring stretch</b> — heel on the bench, hinge forward with a flat back. 30s each.',
+  '<b>Quad stretch</b> — standing, pull the heel to the glute, knees together. 30s each.',
+  '<b>Figure-4 glute stretch</b> — lying, ankle on the opposite knee, pull the thigh in. 30s each.',
+  '<b>Calf stretch</b> — hands on the wall, back heel down. 30s each.',
+  '<b>Child’s pose</b> — 45s, breathe out slowly.',
+];
 
 const DAYS = [
-  { id:'upper-a', dow:6, short:'Sat', day:'Saturday', tag:'Upper A', title:'Chest, back, arms', time:'~50 min', rest:'75s big moves · 45s arms & delts', warm:WU_UPPER, ex:[
+  { id:'upper-a', tag:'Upper A', title:'Chest, back, arms', time:'~50 min', warm:WU_UPPER, cool:CD_UPPER, ex:[
     { n:'Flat dumbbell press', m:'Chest · triceps · front delts', sr:'4 × 8-15', w:'2×10', rest:'75s', v:V.flatPress,
       prog:'8 → 15 reps, then: 3s lowering → 2s pause on the chest → 1.5 reps → 5 sets.',
       cue:'Bench at 0°. Lower to the chest line with elbows ~45° from the torso, forearms vertical, press up and slightly in.' },
     { n:'Single-arm row', m:'Back · biceps', sr:'4 × 10-15 / arm', w:'1×10', rest:'75s', v:V.row1,
       prog:'2s squeeze at the top → 3s lowering → 5 sets.',
-      cue:'Hand and knee on the flat bench, back flat. Pull the elbow past your torso, no twisting.' },
-    { n:'Push-ups', m:'Chest · triceps · core', sr:'3 × max minus 2', w:'BW', rest:'60s', v:V.pushup,
+      cue:'Hand and knee on the flat bench, back flat. Pull the elbow past your torso, no twisting. Rest after both arms, not between them.' },
+    { n:'Push-ups', m:'Chest · triceps · core', sr:'3 × max minus 2', w:'BW', rest:'90s', v:V.pushup,
       prog:'3 × 20 clean → feet on the flat bench (decline) → 3s lowering.',
-      cue:'Done here while fresh, not after three chest moves. Hands under shoulders, elbows ~45°, body one line, chest to a fist from the floor.' },
+      cue:'Chest is already tired from the press — 10 here is normal, 3 sets even if the third is short. Hands under shoulders, elbows ~45°, body one line, chest to a fist from the floor.' },
     { n:'Bicep curl', m:'Biceps', sr:'3 × 8-15', w:'2×7.5', rest:'45s', v:V.curl,
       prog:'→ 2×10 → incline curl on the 45° bench with 2×7.5 → 2×10.',
       cue:'Elbows pinned to your sides, no swing, lower all the way down.' },
@@ -442,10 +512,10 @@ const DAYS = [
       prog:'12 strict reps → 2×7.5 → 2×10 partials.',
       cue:'Lead with the elbows, stop at shoulder height, no shrug. Slight forward lean.' },
   ]},
-  { id:'lower-a', dow:0, short:'Sun', day:'Sunday', tag:'Lower A', title:'Quads, hamstrings, glutes, calves', time:'~55 min', rest:'90s compounds · 45s the rest', warm:WU_LOWER, ex:[
+  { id:'lower-a', tag:'Lower A', title:'Quads, hamstrings, glutes, calves', time:'~55 min', warm:WU_LOWER, cool:CD_LOWER, ex:[
     { n:'Bulgarian split squat', m:'Quads · glutes — main leg move', sr:'4 × 8-12 / leg', w:'2×7.5', rest:'90s', v:V.bss,
       prog:'→ 2×10 → 3s lowering → pause at the bottom → 5 sets.',
-      cue:'Rear foot on the flat bench, front shin roughly vertical, drop straight down, drive through the front heel.' },
+      cue:'Rear foot on the flat bench, front shin roughly vertical, drop straight down, drive through the front heel. Rest after both legs.' },
     { n:'Front-rack squat', m:'Quads · glutes · core', sr:'3 × 12-20', w:'2×10', rest:'90s', v:V.frontSquat,
       prog:'2s pause at the bottom → 1.5 reps → 3s down, 3s up.',
       cue:'Dumbbells resting on the shoulders, elbows up, chest tall, sit between the knees, heels down.' },
@@ -458,14 +528,14 @@ const DAYS = [
     { n:'Calf raise', m:'Calves', sr:'3 × 15-20', w:'2×10', rest:'45s', v:V.calf,
       prog:'Single-leg with 1×10 → 2s pause at the top.',
       cue:'Toes on a step, full stretch at the bottom, pause at the top.' },
-    { n:'Dead bug', m:'Core', sr:'3 × 10 / side', w:'BW', rest:'45s', v:V.deadBug,
+    { n:'Dead bug', m:'Core', sr:'3 × 10 / side', w:'BW', rest:'30s', v:V.deadBug,
       prog:'→ hollow hold 3 × 20-40s.',
       cue:'Lower back pressed into the floor, exhale as the opposite arm and leg extend, slow.' },
     { n:'Lateral raise', m:'Side delts — delts like frequency', sr:'3 × 15-20', w:'2×5', rest:'45s', v:V.lateral,
       prog:'Same ladder as Upper A.',
       cue:'Lead with the elbows, stop at shoulder height, no shrug.' },
   ]},
-  { id:'upper-b', dow:2, short:'Tue', day:'Tuesday', tag:'Upper B', title:'Shoulders, back, arms', time:'~55 min', rest:'75s big moves · 45s arms & delts', warm:WU_UPPER, ex:[
+  { id:'upper-b', tag:'Upper B', title:'Shoulders, back, arms', time:'~55 min', warm:WU_UPPER, cool:CD_UPPER, ex:[
     { n:'Seated shoulder press', m:'Shoulders · triceps', sr:'4 × 8-15', w:'2×10', rest:'75s', v:V.ohp,
       prog:'2s pause at the bottom → 3s lowering → standing → 1.5 reps.',
       cue:'Bench at 80°. Start at ear height, press up and slightly back, ribs down, no arching.' },
@@ -488,10 +558,10 @@ const DAYS = [
       prog:'→ 2×10 → 3s lowering.',
       cue:'Lying on the flat bench. Upper arms vertical and still, lower to the sides of the head, extend.' },
   ]},
-  { id:'lower-b', dow:5, short:'Fri', day:'Friday', tag:'Lower B', title:'Hinge, single-leg, conditioning', time:'~50 min', rest:'75s compounds · 45s the rest', warm:WU_LOWER, ex:[
+  { id:'lower-b', tag:'Lower B', title:'Hinge, single-leg, conditioning', time:'~50 min', warm:WU_LOWER, cool:CD_LOWER, ex:[
     { n:'Single-leg RDL', m:'Hamstrings · glutes · balance', sr:'3 × 10-12 / leg', w:'1×10', rest:'75s', v:V.slRdl,
       prog:'→ 2×7.5 → 2×10 → 3s lowering.',
-      cue:'Dumbbell in the opposite hand, other hand on the bench for balance. Hinge, back leg long, hips square.' },
+      cue:'Dumbbell in the opposite hand, other hand on the bench for balance. Hinge, back leg long, hips square. Rest after both legs.' },
     { n:'Reverse lunge', m:'Quads · glutes', sr:'3 × 10-12 / leg', w:'2×7.5', rest:'75s', v:V.revLunge,
       prog:'→ 2×10 → 3s lowering.',
       cue:'Step back, front shin vertical, back knee taps softly, drive through the front heel.' },
@@ -504,7 +574,7 @@ const DAYS = [
     { n:'Thrusters', m:'Legs · shoulders · conditioning', sr:'3 × 12-15', w:'2×7.5', rest:'60s', v:V.thruster,
       prog:'→ 2×10 → shorter rest.',
       cue:'Dumbbells on the shoulders, squat, drive up and press overhead in one motion.' },
-    { n:'Side plank', m:'Obliques · core', sr:'3 × 30-45s / side', w:'BW', rest:'45s', v:V.sidePlank,
+    { n:'Side plank', m:'Obliques · core', sr:'3 × 30-45s / side', w:'BW', rest:'30s', v:V.sidePlank,
       prog:'Feet on the bench → hip dips.',
       cue:'Elbow under the shoulder, hips high, body one straight line.' },
     { n:'Bicep curl — finisher', m:'Biceps', sr:'2 × 12', w:'2×7.5', rest:'30s', v:V.curl,
@@ -515,11 +585,6 @@ const DAYS = [
       cue:'Strict, slow lowering.' },
   ]},
 ];
-const WEEK = [
-  { d:'Sat', sess:'upper-a' }, { d:'Sun', sess:'lower-a' }, { d:'Mon', k:'office', t:'walk' },
-  { d:'Tue', sess:'upper-b' }, { d:'Wed', k:'office', t:'walk' }, { d:'Thu', k:'office', t:'stairs + walk' }, { d:'Fri', sess:'lower-b' },
-];
-const DOW = { Sat:6, Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5 };
 const DAY_BY_ID = Object.fromEntries(DAYS.map(d => [d.id, d]));
 
 /* ---------- Helpers ---------- */
@@ -547,8 +612,13 @@ const ytHTML = ([id, by]) =>
   `<img loading="lazy" src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="">` +
   `<button class="play" aria-label="Play form video"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>` +
   `<span class="cap">Form video &middot; ${esc(by)}</span>`;
+let toastTimer;
+function toast(msg) {
+  let t = $('#toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 4000);
+}
 
-/* ---------- Data: sessions logged from the day sheets, plus manual extras ---------- */
+/* ---------- Data: sessions logged from the sheets, plus manual extras ---------- */
 const SKEY = 'wt-sessions-v2', XKEY = 'wt-extras-v2';
 let sessions = null, extras = null;
 const loadJSON = (k, fb) => { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch (e) { return fb; } };
@@ -565,7 +635,7 @@ const getSession = (dayId, date, create) => {
   if (!S()[k] && create) S()[k] = { date, day:dayId, ex:{}, feel:null, note:'' };
   return S()[k];
 };
-/* Most recent earlier session of this day that logged this exercise. */
+/* Most recent earlier session of this type that logged this exercise. */
 function lastEntry(dayId, name, beforeDate) {
   const list = Object.values(S()).filter(s => s.day === dayId && s.date < beforeDate && s.ex[name]).sort((a, b) => b.date.localeCompare(a.date));
   return list[0] ? { ...list[0].ex[name], date:list[0].date } : null;
@@ -579,21 +649,29 @@ function sessionStats(day, s) {
   return { ...st, logged, total:day.ex.length, complete:logged === day.ex.length, start:times[0], end:times[times.length - 1] };
 }
 const completion = st => st.fail + st.skip === 0 ? 'yes' : st.done + st.mod === 0 ? 'no' : 'part';
+/* The training week runs Sat → Fri. */
+function weekRange() {
+  const t = new Date(), sat = new Date(t); sat.setDate(t.getDate() - (t.getDay() + 1) % 7);
+  const fri = new Date(sat); fri.setDate(sat.getDate() + 6);
+  return [isoDate(sat), isoDate(fri)];
+}
+const thisWeekSession = dayId => { const [a, b] = weekRange(); return Object.values(S()).filter(s => s.day === dayId && s.date >= a && s.date <= b).sort((x, y) => x.date.localeCompare(y.date))[0]; };
 
-/* ---------- Render: tabs, day sheets ---------- */
-const TABS = [{ id:'overview', label:'Overview' }, ...DAYS.map(d => ({ id:d.id, label:`${d.short} · ${d.tag}` })), { id:'log', label:'Log' }];
+/* ---------- Render: tabs, sheets ---------- */
+const TABS = [{ id:'overview', label:'Overview' }, ...DAYS.map(d => ({ id:d.id, label:d.tag })), { id:'log', label:'Log' }];
 $('#tabs').innerHTML = TABS.map(t =>
   `<button class="tab" role="tab" data-tab="${t.id}" aria-selected="false" aria-controls="p-${t.id}">${esc(t.label)}</button>`).join('');
 
-$('#days').innerHTML = DAYS.map(d => `
+const stepsHTML = list => `<ol class="steps">${list.map(s => `<li>${s}</li>`).join('')}</ol>`;
+$('#days').innerHTML = DAYS.map((d, di) => `
   <section class="panel" id="p-${d.id}" role="tabpanel" hidden>
     <header class="panel-head">
-      <p class="eyebrow">${d.day} &middot; ${esc(d.tag)}</p>
+      <p class="eyebrow">Session ${di + 1} of 4 &middot; ${esc(d.tag)}</p>
       <h2>${esc(d.title)}</h2>
-      <p class="lede">${d.ex.length} exercises &middot; ${esc(d.time)} &middot; rest ${esc(d.rest)}</p>
+      <p class="lede">${d.ex.length} exercises &middot; ${esc(d.time)} incl. warm-up and stretch &middot; tap <b>Rest</b> after every set.</p>
     </header>
     <div class="card" id="s-${d.id}"></div>
-    <div class="card"><p class="warmup"><b>Warm-up, 5 min:</b> ${d.warm}</p></div>
+    <div class="card"><h2>Warm-up <small>5 min · before, moving</small></h2>${stepsHTML(d.warm)}</div>
     <div class="ex-list">
       ${d.ex.map((e, i) => `
       <article class="ex" id="x-${d.id}-${i}">
@@ -604,7 +682,7 @@ $('#days').innerHTML = DAYS.map(d => `
           <dl class="specs">
             <div><dt>Sets &times; reps</dt><dd>${esc(e.sr)}</dd></div>
             <div class="w"><dt>Start</dt><dd>${weight(e.w)}</dd></div>
-            <div><dt>Rest</dt><dd>${esc(e.rest)}</dd></div>
+            <div class="r"><button type="button" class="rest" data-sec="${parseInt(e.rest, 10)}" data-for="${esc(e.n)}"><dt>Rest between sets</dt><dd>${esc(e.rest)}</dd></button></div>
           </dl>
           <p class="cue prog"><span>Progress</span>${esc(e.prog)}</p>
           <p class="cue"><span>Form cue</span>${esc(e.cue)}</p>
@@ -614,26 +692,47 @@ $('#days').innerHTML = DAYS.map(d => `
         </div>
       </article>`).join('')}
     </div>
+    <div class="card" style="margin-top:16px"><h2>Cool-down <small>5 min · after, hold still</small></h2>${stepsHTML(d.cool)}
+      <p class="steps-note">Hold each stretch gently — mild pull, no bouncing, keep breathing. This is what keeps tomorrow’s soreness manageable.</p></div>
   </section>`).join('');
 
-/* Week strip: Sat..Fri of the current week, ✓ where a session is logged */
-function weekDates() {
-  const t = new Date(), sat = new Date(t); sat.setDate(t.getDate() - (t.getDay() + 1) % 7);
-  return WEEK.map((w, i) => { const d = new Date(sat); d.setDate(sat.getDate() + i); return isoDate(d); });
-}
-/* A session counts for this week whichever day it was actually done on (Mon's Upper A still fills the Sat slot). */
-const doneThisWeek = (dayId, dates) => Object.values(S()).some(s => s.day === dayId && s.date >= dates[0] && s.date <= dates[6]);
 function renderWeek() {
-  const today = new Date().getDay(), dates = weekDates();
-  $('#week').innerHTML = WEEK.map((w, i) => {
-    const day = w.sess && DAY_BY_ID[w.sess];
-    const logged = day && doneThisWeek(day.id, dates);
-    const cls = 'wd' + (day ? ' sess' : '') + (DOW[w.d] === today ? ' today' : '') + (logged ? ' logged' : '');
-    return day
-      ? `<a class="${cls}" href="#${day.id}"><b>${w.d}</b><span class="l">${esc(day.tag)}</span><span class="s">${esc(day.tag.replace('Upper', 'Up').replace('Lower', 'Low'))}</span><span class="k">${esc(day.title.split(',')[0])}</span></a>`
-      : `<div class="${cls}"><b>${w.d}</b><span class="k ${w.k}">${w.k}</span><span class="l">${esc(w.t)}</span><span class="s">${esc(w.t.split(' ')[0])}</span></div>`;
+  const [a, b] = weekRange();
+  $('#wk-range').textContent = `${niceDate(a).slice(4)} – ${niceDate(b).slice(4)}`;
+  $('#week').innerHTML = DAYS.map(d => {
+    const s = thisWeekSession(d.id);
+    return `<a class="${s ? 'logged' : ''}" href="#${d.id}"><b>${esc(d.tag)}</b><span>${esc(d.title.split(',')[0])}</span><span class="d">${s ? niceDate(s.date) : 'not yet'}</span></a>`;
   }).join('');
 }
+
+/* ---------- Rest timer ---------- */
+let tEnd = 0, tTick = null;
+function beep() {
+  try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {}
+  try {
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    [0, .25].forEach(t => { const o = ac.createOscillator(), g = ac.createGain(); o.connect(g); g.connect(ac.destination); o.frequency.value = 880; g.gain.setValueAtTime(.25, ac.currentTime + t); g.gain.exponentialRampToValueAtTime(.001, ac.currentTime + t + .2); o.start(ac.currentTime + t); o.stop(ac.currentTime + t + .22); });
+  } catch (e) {}
+}
+function tick() {
+  const left = Math.max(0, Math.round((tEnd - Date.now()) / 1000));
+  $('#t-left').textContent = left;
+  if (left > 0) return;
+  clearInterval(tTick); tTick = null; beep();
+  $('#timer').classList.add('go'); $('#t-left').textContent = 'Go'; $('#t-for').textContent = 'next set';
+  setTimeout(() => { if (!tTick) $('#timer').hidden = true; }, 2500);
+}
+function startRest(sec, label) {
+  tEnd = Date.now() + sec * 1000;
+  const t = $('#timer'); t.hidden = false; t.classList.remove('go');
+  $('#t-for').textContent = label;
+  clearInterval(tTick); tick(); tTick = setInterval(tick, 250);
+}
+$('#days').addEventListener('click', ev => {
+  const b = ev.target.closest('button.rest'); if (b) startRest(+b.dataset.sec, b.dataset.for);
+});
+$('#t-add').addEventListener('click', () => { tEnd = Math.max(tEnd, Date.now()) + 15000; if (!tTick) { $('#timer').classList.remove('go'); tTick = setInterval(tick, 250); } tick(); });
+$('#t-stop').addEventListener('click', () => { clearInterval(tTick); tTick = null; $('#timer').hidden = true; });
 
 /* ---------- Per-exercise logging ---------- */
 const STATUS = { done:'Done', mod:'Modified', fail:'Couldn’t', skip:'Skipped' };
@@ -656,7 +755,6 @@ function renderLog(dayId, i) {
     box.innerHTML = `<div class="logbar"><button class="done" data-act="done">✓ Done</button><button data-act="mod">Modified</button>` +
       `<button class="fail" data-act="fail">Couldn’t</button><button class="skip" data-act="skip">Skip</button></div>`;
   }
-  // "Last:" line + nudge
   const last = lastEntry(dayId, e.n, isoDate()), lastEl = $(`#last-${dayId}-${i}`), plan = parseSR(e.sr);
   if (!last) { lastEl.innerHTML = ''; lastEl.hidden = true; return; }
   lastEl.hidden = false;
@@ -727,10 +825,12 @@ function summaryLines(day, s) {
 const FEEL = { good:'👍 Good', ok:'😐 OK', rough:'👎 Rough' };
 function renderSession(dayId) {
   const day = DAY_BY_ID[dayId], box = $(`#s-${dayId}`), date = isoDate(), s = getSession(dayId, date, false);
+  const prev = thisWeekSession(dayId);
   if (!s || !Object.keys(s.ex).length) {
     box.className = 'card';
     box.innerHTML = `<div class="sess-top"><b>Today · ${niceDate(date)}</b><span>0 / ${day.ex.length} logged</span></div>` +
-      `<p class="hint">Tap <b>Done</b> under each exercise as you finish it — the tap time is the workout time. Log later if you must; it still counts.</p>`;
+      (prev ? `<p class="hint">Already done this week on ${niceDate(prev.date)} — doing it again is fine, it just logs as a second session.</p>` :
+      `<p class="hint">Tap <b>Done</b> under each exercise as you finish it — the tap time is the workout time. Log later if you must; it still counts.</p>`);
     return;
   }
   const st = sessionStats(day, s);
@@ -746,7 +846,7 @@ function renderSession(dayId) {
       `<span>✓ ${st.done} done</span>${st.mod ? `<span>~ ${st.mod} modified</span>` : ''}${st.fail ? `<span>✗ ${st.fail} couldn’t</span>` : ''}${st.skip ? `<span>– ${st.skip} skipped</span>` : ''}` +
       `</div>${lines ? `<ul>${lines}</ul>` : '<p class="hint" style="margin-top:8px">Everything as written. Saved to the Log.</p>'}</div>` +
       `<div class="feel"><span>Overall</span>${Object.entries(FEEL).map(([k, v]) => `<button data-feel="${k}" class="${s.feel === k ? 'on' : ''}">${v}</button>`).join('')}</div>` +
-      `<details class="more"${s.note ? ' open' : ''}><summary>Note, watch stats, sleep — optional</summary><textarea data-sess="note" placeholder="Paste Pixel Watch / Health stats, sleep, how the day felt">${esc(s.note)}</textarea></details>`;
+      `<details class="more"${s.note ? ' open' : ''}><summary>Note, watch stats, sleep — optional</summary><textarea data-sess="note" placeholder="Paste Pixel Watch / Health stats, sleep, how the day felt — or share text to this app from Android">${esc(s.note)}</textarea></details>`;
     return (box.innerHTML = html);
   }
   box.className = 'card';
@@ -788,9 +888,8 @@ function renderHist() {
       `<div class="h-sum"><span>✓ ${st.done}</span>${st.mod ? `<span>~ ${st.mod}</span>` : ''}${st.fail ? `<span>✗ ${st.fail}</span>` : ''}${st.skip ? `<span>– ${st.skip}</span>` : ''}${s.feel ? `<span>${FEEL[s.feel]}</span>` : ''}</div>` +
       `<details><summary>Details</summary><ul>${lines}</ul>${s.note ? `<p class="note">${esc(s.note)}</p>` : ''}</details></article>`;
   }).join('');
-  // stats
-  const all = Object.values(S()), dates = weekDates();
-  const thisWeek = WEEK.filter(w => w.sess && doneThisWeek(w.sess, dates)).length;
+  const all = Object.values(S());
+  const thisWeek = DAYS.filter(d => thisWeekSession(d.id)).length;
   let ex = 0, good = 0;
   all.forEach(s => Object.values(s.ex).forEach(r => { ex++; if (r.s === 'done' || r.s === 'mod') good++; }));
   $('#stats').innerHTML =
@@ -798,12 +897,15 @@ function renderHist() {
     `<div class="stat"><b>${thisWeek}/4</b><span>This week</span></div>` +
     `<div class="stat"><b>${ex ? Math.round(good / ex * 100) : 0}%</b><span>Exercises done</span></div>`;
 }
+const renderAll = () => {
+  renderHist(); renderWeek();
+  DAYS.forEach(d => { renderSession(d.id); d.ex.forEach((e, i) => renderLog(d.id, i)); });
+};
 $('#hist').addEventListener('click', ev => {
   const b = ev.target.closest('[data-del-s], [data-del-x]'); if (!b) return;
   if (!confirm('Delete this entry?')) return;
   if (b.dataset.delS) delete S()[b.dataset.delS]; else X().splice(+b.dataset.delX, 1);
-  persist(); renderHist(); renderWeek();
-  DAYS.forEach(d => { renderSession(d.id); d.ex.forEach((e, i) => renderLog(d.id, i)); });
+  persist(); renderAll();
 });
 $('#add').addEventListener('click', ev => {
   ev.preventDefault();
@@ -817,7 +919,7 @@ const download = (name, text, type) => {
 };
 const payload = () => ({
   exported:new Date().toISOString(),
-  program:DAYS.map(d => ({ id:d.id, tag:d.tag, day:d.day, exercises:d.ex.map(e => ({ name:e.n, plan:e.sr, start:e.w, progress:e.prog })) })),
+  program:DAYS.map(d => ({ id:d.id, tag:d.tag, exercises:d.ex.map(e => ({ name:e.n, plan:e.sr, start:e.w, rest:e.rest, progress:e.prog })) })),
   sessions:Object.values(S()), extras:X(),
 });
 $('#json').addEventListener('click', () => download(`workout-${isoDate()}.json`, JSON.stringify(payload(), null, 2), 'application/json'));
@@ -832,10 +934,6 @@ $('#csv').addEventListener('click', () => {
   X().forEach(x => rows.push([x.date, x.type, x.at ? hhmm(x.at) : '', '', '', '', '', '', '', '', x.dur ? x.dur + ' min' : '', x.note]));
   download(`workout-${isoDate()}.csv`, rows.map(r => r.map(q).join(',')).join('\n'), 'text/csv');
 });
-const renderAll = () => {
-  renderHist(); renderWeek();
-  DAYS.forEach(d => { renderSession(d.id); d.ex.forEach((e, i) => renderLog(d.id, i)); });
-};
 $('#clear').addEventListener('click', () => {
   if (!confirm('Delete every logged session and entry? This cannot be undone.')) return;
   sessions = {}; extras = []; persist(); renderAll();
@@ -946,7 +1044,7 @@ function showTab(id, opts = {}) {
   tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.tab === id)));
   const t = tabs.find(t => t.dataset.tab === id);
   if (t) t.scrollIntoView({ block:'nearest', inline:'center' });
-  if (!opts.silent) history.replaceState(null, '', '#' + id);
+  if (!opts.silent) history.replaceState(null, '', location.pathname + '#' + id);
   ls.set('tab', id);
   const y = +ss.get('scroll:' + id) || 0;
   requestAnimationFrame(() => scrollTo({ top:y, behavior:'instant' }));
@@ -971,18 +1069,35 @@ document.addEventListener('click', e => {
 if (!ls.get('reentry-done')) $('#reentry').hidden = false;
 $('#reentry-done').addEventListener('click', () => { ls.set('reentry-done', '1'); $('#reentry').hidden = true; });
 
+/* ---------- Shared text (Android share sheet → this app) lands in the session note ---------- */
+function acceptShare() {
+  const u = new URL(location.href), text = [u.searchParams.get('share_title'), u.searchParams.get('share_text'), u.searchParams.get('share_url')].filter(Boolean).join('\n').trim();
+  if (!u.searchParams.has('share_text') && !u.searchParams.has('share_title')) return null;
+  history.replaceState(null, '', location.pathname + location.hash);
+  if (!text) return null;
+  const today = isoDate();
+  // Today's session if there is one, else the most recent session within the last day, else a standalone note.
+  let s = Object.values(S()).filter(x => x.date === today).sort((a, b) => (sessionStats(DAY_BY_ID[b.day], b).end || '').localeCompare(sessionStats(DAY_BY_ID[a.day], a).end || ''))[0];
+  if (!s) { const y = new Date(); y.setDate(y.getDate() - 1); s = Object.values(S()).filter(x => x.date === isoDate(y))[0]; }
+  if (s) {
+    s.note = (s.note ? s.note.trimEnd() + '\n\n' : '') + text;
+    persist(); return `Added to ${DAY_BY_ID[s.day].tag} (${niceDate(s.date)})`;
+  }
+  X().push({ date:today, type:'Watch stats', dur:'', note:text, at:new Date().toISOString() });
+  persist(); return 'Saved as a note for today — no session logged yet';
+}
+
 /* ---------- Boot ---------- */
-DAYS.forEach(d => { renderSession(d.id); d.ex.forEach((e, i) => renderLog(d.id, i)); });
-renderWeek(); renderHist();
+const shared = acceptShare();
+renderAll();
 $('#f-date').value = isoDate();
 showTab(location.hash.slice(1) || ls.get('tab') || 'overview', { silent:!location.hash });
+if (shared) { toast(shared); showTab('log'); }
 /* A new day rolled over while the app stayed open (installed PWA): refresh the "Today" cards. */
 let bootDate = isoDate();
 addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible' || isoDate() === bootDate) return;
-  bootDate = isoDate();
-  DAYS.forEach(d => { renderSession(d.id); d.ex.forEach((e, i) => renderLog(d.id, i)); });
-  renderWeek();
+  bootDate = isoDate(); renderAll();
 });
 
 /* ---------- PWA ---------- */
