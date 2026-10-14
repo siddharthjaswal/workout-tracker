@@ -1,5 +1,5 @@
 /* Offline shell: cache the app files, serve from cache first, refresh in the background. */
-const CACHE = 'wt-v3';
+const CACHE = 'wt-v4';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

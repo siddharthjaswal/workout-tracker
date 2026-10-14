@@ -210,6 +210,8 @@ details.more textarea { margin-top:10px; }
 .stats { display:flex; flex-wrap:wrap; gap:22px; }
 .stat b { display:block; font-size:24px; letter-spacing:-.02em; }
 .stat span { font-size:12px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); }
+.sync { margin-top:14px; font-size:13.5px; color:var(--ink-3); }
+.sync.ok { color:var(--ok); } .sync.bad { color:var(--bad); }
 .hist { display:grid; gap:10px; }
 .h {
   background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px 16px; box-shadow:var(--shadow);
@@ -359,17 +361,29 @@ footer { margin-top:34px; padding-top:18px; border-top:1px solid var(--line); fo
   <header class="panel-head">
     <p class="eyebrow">Tracker</p>
     <h2>Log</h2>
-    <p class="lede">Every session, written automatically from what you tapped on the day sheets. Saved in this browser only; export any time.</p>
+    <p class="lede">Every session, written automatically from what you tapped on the day sheets. Saved in this browser and, once connected, in your own GitHub gist.</p>
   </header>
 
   <div class="card">
     <div class="stats" id="stats"></div>
+    <p class="sync" id="sync-status">Cloud sync off &mdash; set it up below so the log survives a reinstall and can be reviewed.</p>
     <div class="actions">
       <button class="btn" id="json">Export JSON</button>
       <button class="btn" id="csv">Export CSV</button>
       <button class="btn" id="clear">Clear all</button>
     </div>
     <p class="warn" id="warn" hidden>This browser won&rsquo;t save data for files opened from disk, so entries last only until you close the page &mdash; export, or open the hosted version.</p>
+    <details class="more" id="sync-box">
+      <summary>Cloud sync (GitHub gist)</summary>
+      <p class="hint">Create a token at <a href="https://github.com/settings/tokens/new?scopes=gist&amp;description=Workout%20tracker" target="_blank" rel="noopener">github.com/settings/tokens/new</a> with only the <b>gist</b> scope, paste it here. The log is then saved to a secret gist a few seconds after every change &mdash; nothing else is uploaded.</p>
+      <div class="ed-row" style="margin-top:10px"><input type="password" id="gh-token" placeholder="ghp_&hellip;" autocomplete="off" style="flex:1;min-width:200px"></div>
+      <div class="actions">
+        <button class="btn primary" id="sync-save">Save &amp; sync</button>
+        <button class="btn" id="sync-restore">Restore from cloud</button>
+        <button class="btn" id="sync-off">Disconnect</button>
+      </div>
+      <p class="hint" id="sync-info"></p>
+    </details>
   </div>
 
   <div class="hist" id="hist"></div>
@@ -543,6 +557,7 @@ const X = () => extras ?? (extras = loadJSON(XKEY, []));
 const persist = () => {
   const ok = ls.set(SKEY, JSON.stringify(S())) & ls.set(XKEY, JSON.stringify(X()));
   if (!ok) $('#warn').hidden = false;
+  scheduleSync();
 };
 const skey = (dayId, date) => `${date}|${dayId}`;
 const getSession = (dayId, date, create) => {
@@ -800,11 +815,12 @@ const download = (name, text, type) => {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); URL.revokeObjectURL(a.href);
 };
-$('#json').addEventListener('click', () => download(`workout-${isoDate()}.json`, JSON.stringify({
+const payload = () => ({
   exported:new Date().toISOString(),
   program:DAYS.map(d => ({ id:d.id, tag:d.tag, day:d.day, exercises:d.ex.map(e => ({ name:e.n, plan:e.sr, start:e.w, progress:e.prog })) })),
   sessions:Object.values(S()), extras:X(),
-}, null, 2), 'application/json'));
+});
+$('#json').addEventListener('click', () => download(`workout-${isoDate()}.json`, JSON.stringify(payload(), null, 2), 'application/json'));
 $('#csv').addEventListener('click', () => {
   const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
   const rows = [['Date', 'Session', 'Start', 'End', 'Completed', 'Done', 'Modified', 'Couldn’t', 'Skipped', 'Feel', 'Exercises', 'Note']];
@@ -816,11 +832,101 @@ $('#csv').addEventListener('click', () => {
   X().forEach(x => rows.push([x.date, x.type, x.at ? hhmm(x.at) : '', '', '', '', '', '', '', '', x.dur ? x.dur + ' min' : '', x.note]));
   download(`workout-${isoDate()}.csv`, rows.map(r => r.map(q).join(',')).join('\n'), 'text/csv');
 });
+const renderAll = () => {
+  renderHist(); renderWeek();
+  DAYS.forEach(d => { renderSession(d.id); d.ex.forEach((e, i) => renderLog(d.id, i)); });
+};
 $('#clear').addEventListener('click', () => {
   if (!confirm('Delete every logged session and entry? This cannot be undone.')) return;
-  sessions = {}; extras = []; persist(); renderHist(); renderWeek();
-  DAYS.forEach(d => { renderSession(d.id); d.ex.forEach((e, i) => renderLog(d.id, i)); });
+  sessions = {}; extras = []; persist(); renderAll();
 });
+
+/* ---------- Cloud sync: the whole log as workout.json in a secret GitHub gist ---------- */
+const TKEY = 'wt-gh-token', GKEY = 'wt-gist', GFILE = 'workout.json', GDESC = 'Workout tracker data';
+let syncTimer = null, syncing = false, syncAgain = false;
+const setSync = (msg, cls = '') => { const el = $('#sync-status'); el.textContent = msg; el.className = 'sync ' + cls; };
+const gist = () => loadJSON(GKEY, null);
+function showSyncInfo() {
+  const g = gist(), el = $('#sync-info');
+  el.innerHTML = g ? `Connected to gist <a href="https://gist.github.com/${g.id}" target="_blank" rel="noopener">${g.id.slice(0, 8)}…</a> as ${esc(g.owner)}.` : '';
+  $('#sync-box').open = !ls.get(TKEY);
+}
+async function gh(path, method = 'GET', body) {
+  const r = await fetch('https://api.github.com' + path, {
+    method, body: body ? JSON.stringify(body) : undefined,
+    headers: { Authorization:'Bearer ' + ls.get(TKEY), Accept:'application/vnd.github+json', 'Content-Type':'application/json' },
+  });
+  if (!r.ok) throw new Error(r.status === 401 ? 'token rejected' : r.status === 403 ? 'token lacks the gist scope' : 'GitHub ' + r.status);
+  return r.json();
+}
+/* Find the gist this app made earlier (after a reinstall the id is gone but the token may be re-entered). */
+async function findGist() {
+  for (let page = 1; page <= 5; page++) {
+    const list = await gh(`/gists?per_page=100&page=${page}`);
+    const g = list.find(g => g.files[GFILE] && g.description === GDESC);
+    if (g) return { id:g.id, owner:g.owner.login };
+    if (list.length < 100) break;
+  }
+  return null;
+}
+function scheduleSync() { if (!ls.get(TKEY)) return; clearTimeout(syncTimer); syncTimer = setTimeout(syncNow, 2500); }
+async function syncNow() {
+  if (!ls.get(TKEY)) return;
+  if (syncing) { syncAgain = true; return; }
+  syncing = true; setSync('Syncing…');
+  try {
+    const files = { [GFILE]: { content: JSON.stringify(payload(), null, 2) } };
+    let g = gist();
+    if (g) await gh('/gists/' + g.id, 'PATCH', { files });
+    else {
+      const r = await gh('/gists', 'POST', { description:GDESC, public:false, files });
+      g = { id:r.id, owner:r.owner.login }; ls.set(GKEY, JSON.stringify(g));
+    }
+    ls.set('wt-synced', new Date().toISOString());
+    setSync('Synced to your gist at ' + hhmm(new Date().toISOString()), 'ok');
+  } catch (e) {
+    setSync((navigator.onLine ? 'Sync failed — ' + e.message : 'Offline — will sync when back online') + '. Your data is safe on this phone.', 'bad');
+  }
+  syncing = false; showSyncInfo();
+  if (syncAgain) { syncAgain = false; scheduleSync(); }
+}
+async function restoreFromCloud(auto) {
+  let g = gist();
+  if (!g) { g = await findGist(); if (g) ls.set(GKEY, JSON.stringify(g)); }
+  if (!g) { if (!auto) setSync('No workout gist found on this account yet — it gets created on the first sync.'); return false; }
+  const r = await gh('/gists/' + g.id);
+  const p = JSON.parse(r.files[GFILE].content);
+  if (!auto && Object.keys(S()).length && !confirm(`Replace the ${Object.keys(S()).length} session(s) on this phone with the ${p.sessions.length} in the cloud (saved ${new Date(p.exported).toLocaleString()})?`)) return false;
+  sessions = Object.fromEntries(p.sessions.map(s => [skey(s.day, s.date), s])); extras = p.extras || [];
+  ls.set(SKEY, JSON.stringify(sessions)); ls.set(XKEY, JSON.stringify(extras));
+  renderAll(); setSync(`Restored ${p.sessions.length} session(s) from your gist.`, 'ok');
+  return true;
+}
+$('#sync-save').addEventListener('click', async () => {
+  const t = $('#gh-token').value.trim();
+  if (!t) return $('#gh-token').focus();
+  ls.set(TKEY, t); $('#gh-token').value = '';
+  setSync('Connecting…');
+  try {
+    if (!Object.keys(S()).length && await restoreFromCloud(true)) return;   // fresh phone: pull what the cloud has
+    await syncNow();
+  } catch (e) { setSync('Could not connect — ' + e.message, 'bad'); }
+});
+$('#sync-restore').addEventListener('click', async () => {
+  if (!ls.get(TKEY)) return setSync('Paste a token first.', 'bad');
+  try { await restoreFromCloud(false); } catch (e) { setSync('Restore failed — ' + e.message, 'bad'); }
+});
+$('#sync-off').addEventListener('click', () => {
+  try { localStorage.removeItem(TKEY); localStorage.removeItem(GKEY); localStorage.removeItem('wt-synced'); } catch (e) {}
+  setSync('Cloud sync off. Data stays on this phone.'); showSyncInfo();
+});
+addEventListener('online', scheduleSync);
+if (ls.get(TKEY)) {
+  const last = ls.get('wt-synced');
+  setSync(last ? 'Synced to your gist at ' + hhmm(last) : 'Connected — not synced yet', last ? 'ok' : '');
+  scheduleSync();
+}
+showSyncInfo();
 
 /* ---------- Tabs: URL hash + localStorage, scroll position per tab ---------- */
 const panels = [...document.querySelectorAll('.panel')];
