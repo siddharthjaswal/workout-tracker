@@ -496,7 +496,7 @@ const DAYS = [
     { n:'Flat dumbbell press', m:'Chest · triceps · front delts', sr:'4 × 8-15', w:'2×10', rest:'75s', v:V.flatPress,
       prog:'8 → 15 reps, then: 3s lowering → 2s pause on the chest → 1.5 reps → 5 sets.',
       cue:'Bench at 0°. Lower to the chest line with elbows ~45° from the torso, forearms vertical, press up and slightly in.' },
-    { n:'Single-arm row', m:'Back · biceps', sr:'4 × 10-15 / arm', w:'1×10', rest:'75s', v:V.row1,
+    { n:'Single-arm row', m:'Back · biceps', sr:'4 × 10-15 / arm', w:'1×10', hold:'one dumbbell, per arm', rest:'75s', v:V.row1,
       prog:'2s squeeze at the top → 3s lowering → 5 sets.',
       cue:'Hand and knee on the flat bench, back flat. Pull the elbow past your torso, no twisting. Rest after both arms, not between them.' },
     { n:'Push-ups', m:'Chest · triceps · core', sr:'3 × max minus 2', w:'BW', rest:'90s', v:V.pushup,
@@ -505,7 +505,7 @@ const DAYS = [
     { n:'Bicep curl', m:'Biceps', sr:'3 × 8-15', w:'2×7.5', rest:'45s', v:V.curl,
       prog:'→ 2×10 → incline curl on the 45° bench with 2×7.5 → 2×10.',
       cue:'Elbows pinned to your sides, no swing, lower all the way down.' },
-    { n:'Overhead tricep extension', m:'Triceps', sr:'3 × 10-15', w:'1×10', rest:'45s', v:V.ohTri,
+    { n:'Overhead tricep extension', m:'Triceps', sr:'3 × 10-15', w:'1×10', hold:'one dumbbell, both hands', rest:'45s', v:V.ohTri,
       prog:'3s lowering → skull crushers lying flat with 2×7.5 → 2×10.',
       cue:'Seated on the 80° bench. Elbows pointing forward and close to the head, lower behind the head under control.' },
     { n:'Lateral raise', m:'Side delts', sr:'3 × 12-20', w:'2×5', rest:'45s', v:V.lateral,
@@ -516,13 +516,13 @@ const DAYS = [
     { n:'Bulgarian split squat', m:'Quads · glutes — main leg move', sr:'4 × 8-12 / leg', w:'2×7.5', rest:'90s', v:V.bss,
       prog:'→ 2×10 → 3s lowering → pause at the bottom → 5 sets.',
       cue:'Rear foot on the flat bench, front shin roughly vertical, drop straight down, drive through the front heel. Rest after both legs.' },
-    { n:'Front-rack squat', m:'Quads · glutes · core', sr:'3 × 12-20', w:'2×10', rest:'90s', v:V.frontSquat,
+    { n:'Front-rack squat', m:'Quads · glutes · core', sr:'3 × 12-20', w:'2×10', hold:'one on each shoulder', rest:'90s', v:V.frontSquat,
       prog:'2s pause at the bottom → 1.5 reps → 3s down, 3s up.',
       cue:'Dumbbells resting on the shoulders, elbows up, chest tall, sit between the knees, heels down.' },
     { n:'Romanian deadlift', m:'Hamstrings · glutes', sr:'4 × 10-15', w:'2×10', rest:'90s', v:V.rdl,
       prog:'3s lowering → 2s pause at the stretch → single-leg version (Lower B).',
       cue:'Hinge at the hips with a flat back and soft knees, dumbbells slide down the thighs, stop when the hamstrings pull.' },
-    { n:'Hip thrust', m:'Glutes', sr:'3 × 12-20', w:'2×10', rest:'60s', v:V.hipThrust,
+    { n:'Hip thrust', m:'Glutes', sr:'3 × 12-20', w:'2×10', hold:'one on each hip', rest:'60s', v:V.hipThrust,
       prog:'2s squeeze at the top → single-leg with 1×10.',
       cue:'Upper back on the flat bench, dumbbells on the hips, chin tucked, drive the heels, finish with ribs down and glutes squeezed.' },
     { n:'Calf raise', m:'Calves', sr:'3 × 15-20', w:'2×10', rest:'45s', v:V.calf,
@@ -559,7 +559,7 @@ const DAYS = [
       cue:'Lying on the flat bench. Upper arms vertical and still, lower to the sides of the head, extend.' },
   ]},
   { id:'lower-b', tag:'Lower B', title:'Hinge, single-leg, conditioning', time:'~50 min', warm:WU_LOWER, cool:CD_LOWER, ex:[
-    { n:'Single-leg RDL', m:'Hamstrings · glutes · balance', sr:'3 × 10-12 / leg', w:'1×10', rest:'75s', v:V.slRdl,
+    { n:'Single-leg RDL', m:'Hamstrings · glutes · balance', sr:'3 × 10-12 / leg', w:'1×10', hold:'one dumbbell, hand opposite the working leg', rest:'75s', v:V.slRdl,
       prog:'→ 2×7.5 → 2×10 → 3s lowering.',
       cue:'Dumbbell in the opposite hand, other hand on the bench for balance. Hinge, back leg long, hips square. Rest after both legs.' },
     { n:'Reverse lunge', m:'Quads · glutes', sr:'3 × 10-12 / leg', w:'2×7.5', rest:'75s', v:V.revLunge,
@@ -568,10 +568,10 @@ const DAYS = [
     { n:'Step-ups', m:'Quads · glutes', sr:'3 × 10-12 / leg', w:'2×5', rest:'60s', v:V.stepUp,
       prog:'→ 2×7.5 → 2×10 → 3s lowering.',
       cue:'Flat bench. Drive through the top heel, no push-off from the floor foot, lower slowly.' },
-    { n:'Single-leg hip thrust', m:'Glutes', sr:'3 × 10-15 / leg', w:'BW', rest:'60s', v:V.slHip,
+    { n:'Single-leg hip thrust', m:'Glutes', sr:'3 × 10-15 / leg', w:'BW', hold:'on the hip', rest:'60s', v:V.slHip,
       prog:'→ 1×5 on the hip → 1×10.',
       cue:'Upper back on the flat bench, one foot planted, other knee up. Ribs down, drive the heel, squeeze.' },
-    { n:'Thrusters', m:'Legs · shoulders · conditioning', sr:'3 × 12-15', w:'2×7.5', rest:'60s', v:V.thruster,
+    { n:'Thrusters', m:'Legs · shoulders · conditioning', sr:'3 × 12-15', w:'2×7.5', hold:'one on each shoulder', rest:'60s', v:V.thruster,
       prog:'→ 2×10 → shorter rest.',
       cue:'Dumbbells on the shoulders, squat, drive up and press overhead in one motion.' },
     { n:'Side plank', m:'Obliques · core', sr:'3 × 30-45s / side', w:'BW', rest:'30s', v:V.sidePlank,
@@ -580,7 +580,7 @@ const DAYS = [
     { n:'Bicep curl — finisher', m:'Biceps', sr:'2 × 12', w:'2×7.5', rest:'30s', v:V.curl,
       prog:'Follow the Upper A ladder.',
       cue:'Strict, slow lowering.' },
-    { n:'Overhead tricep extension — finisher', m:'Triceps', sr:'2 × 12', w:'1×10', rest:'30s', v:V.ohTri,
+    { n:'Overhead tricep extension — finisher', m:'Triceps', sr:'2 × 12', w:'1×10', hold:'one dumbbell, both hands', rest:'30s', v:V.ohTri,
       prog:'Follow the Upper A ladder.',
       cue:'Strict, slow lowering.' },
   ]},
@@ -602,10 +602,10 @@ const pad = n => String(n).padStart(2, '0');
 const isoDate = (d = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; // local date, not UTC
 const hhmm = iso => { const d = new Date(iso); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 const niceDate = iso => new Date(iso + 'T12:00').toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
-const weight = w => w === 'BW' ? 'Bodyweight'
-  : w.startsWith('2×') ? `${w.slice(2)} kg <small>each hand</small>`
-  : w.startsWith('1×') ? `${w.slice(2)} kg <small>one dumbbell</small>` : esc(w);
-const weightShort = w => w === 'BW' ? 'bodyweight' : w.startsWith('2×') ? `${w.slice(2)} kg each hand` : `${w.slice(2)} kg`;
+/* Where the dumbbell goes: the exercise's `hold` wins, else "each hand" for a pair, "one dumbbell" for a single. */
+const holdOf = (w, hold) => hold || (w.startsWith('2×') ? 'each hand' : 'one dumbbell');
+const weight = (w, hold) => w === 'BW' ? 'Bodyweight' : `${w.slice(2)} kg <small>${esc(holdOf(w, hold))}</small>`;
+const weightShort = (w, hold) => w === 'BW' ? 'bodyweight' : `${w.slice(2)} kg ${holdOf(w, hold)}`;
 /* '4 × 8-15 / leg' → {sets:4, lo:8, hi:15}; '3 × max minus 2' → {sets:3} */
 const parseSR = sr => { const m = sr.match(/^(\d+)\s*×\s*(\d+)(?:-(\d+))?/); return m ? { sets:+m[1], lo:+m[2], hi:m[3] ? +m[3] : +m[2] } : { sets:+sr[0] || 3 }; };
 const ytHTML = ([id, by]) =>
@@ -681,7 +681,7 @@ $('#days').innerHTML = DAYS.map((d, di) => `
           <p class="area">${esc(e.m)}</p>
           <dl class="specs">
             <div><dt>Sets &times; reps</dt><dd>${esc(e.sr)}</dd></div>
-            <div class="w"><dt>Start</dt><dd>${weight(e.w)}</dd></div>
+            <div class="w"><dt>Start</dt><dd>${weight(e.w, e.hold)}</dd></div>
             <div class="r"><button type="button" class="rest" data-sec="${parseInt(e.rest, 10)}" data-for="${esc(e.n)}"><dt>Rest between sets</dt><dd>${esc(e.rest)}</dd></button></div>
           </dl>
           <p class="cue prog"><span>Progress</span>${esc(e.prog)}</p>
@@ -741,7 +741,7 @@ function resultText(e, r) {
   const plan = parseSR(e.sr);
   if (r.s === 'fail' || r.s === 'skip') return '';
   const reps = r.reps != null ? r.reps : (plan.lo != null ? (plan.lo === plan.hi ? plan.lo : `${plan.lo}-${plan.hi}`) : '');
-  return `${weightShort(r.w)} · ${r.sets} × ${reps}`;
+  return `${weightShort(r.w, e.hold)} · ${r.sets} × ${reps}`;
 }
 function renderLog(dayId, i) {
   const day = DAY_BY_ID[dayId], e = day.ex[i], box = $(`#l-${dayId}-${i}`), card = $(`#x-${dayId}-${i}`);
@@ -773,7 +773,7 @@ function editorHTML(e, r) {
   const sets = r ? r.sets : plan.sets, reps = r && r.reps != null ? r.reps : '';
   const ph = plan.lo != null ? (plan.lo === plan.hi ? plan.lo : `${plan.lo}-${plan.hi}`) : 'max';
   return `<div class="ed">
-    <div class="ed-row"><span class="ed-l">Weight</span>${chips}${mode !== 'BW' ? `<span class="sub">${mode === '2×' ? 'each hand' : 'one dumbbell'}</span>` : ''}</div>
+    <div class="ed-row"><span class="ed-l">Weight</span>${chips}<span class="sub">${esc(mode === 'BW' ? (e.hold ? 'dumbbell ' + e.hold : '') : holdOf(e.w, e.hold))}</span></div>
     <div class="ed-row"><span class="ed-l">Sets</span><button type="button" class="step" data-d="-1">−</button><b class="n">${sets}</b><button type="button" class="step" data-d="1">+</button><span class="sub">planned ${plan.sets}</span></div>
     <div class="ed-row"><span class="ed-l">Reps</span><input type="number" inputmode="numeric" min="0" class="reps" value="${reps}" placeholder="${ph}"><span class="sub">lowest set · blank = in range</span></div>
     <div class="ed-row"><span class="ed-l">Note</span><input type="text" class="note" value="${esc(r ? r.note : '')}" placeholder="Optional — felt fatigued, lower back tight…"></div>
@@ -817,7 +817,7 @@ function summaryLines(day, s) {
   return day.ex.filter(e => s.ex[e.n] && s.ex[e.n].s !== 'done').map(e => {
     const r = s.ex[e.n];
     let t = `<b>${esc(e.n)}</b> — ${STATUS[r.s].toLowerCase()}`;
-    if (r.s === 'mod') t += `: ${esc(resultText(e, r))} <i>(planned ${esc(e.sr)}, ${esc(weightShort(e.w))})</i>`;
+    if (r.s === 'mod') t += `: ${esc(resultText(e, r))} <i>(planned ${esc(e.sr)}, ${esc(weightShort(e.w, e.hold))})</i>`;
     if (r.note) t += ` — “${esc(r.note)}”`;
     return `<li>${t}</li>`;
   }).join('');
@@ -919,7 +919,7 @@ const download = (name, text, type) => {
 };
 const payload = () => ({
   exported:new Date().toISOString(),
-  program:DAYS.map(d => ({ id:d.id, tag:d.tag, exercises:d.ex.map(e => ({ name:e.n, plan:e.sr, start:e.w, rest:e.rest, progress:e.prog })) })),
+  program:DAYS.map(d => ({ id:d.id, tag:d.tag, exercises:d.ex.map(e => ({ name:e.n, plan:e.sr, start:e.w, hold:holdOf(e.w === 'BW' ? '1×' : e.w, e.hold), rest:e.rest, progress:e.prog })) })),
   sessions:Object.values(S()), extras:X(),
 });
 $('#json').addEventListener('click', () => download(`workout-${isoDate()}.json`, JSON.stringify(payload(), null, 2), 'application/json'));
