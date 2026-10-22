@@ -1,0 +1,25 @@
+name: Pull Google Health data
+
+on:
+  schedule:
+    - cron: '30 3 * * *'   # 09:00 IST, after the night's sleep has synced
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pull the last 14 days into the gist
+        env:
+          GHEALTH_CLIENT_ID: ${{ secrets.GHEALTH_CLIENT_ID }}
+          GHEALTH_CLIENT_SECRET: ${{ secrets.GHEALTH_CLIENT_SECRET }}
+          GHEALTH_REFRESH_TOKEN: ${{ secrets.GHEALTH_REFRESH_TOKEN }}
+          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+          GIST_ID: 656573d3866a2276c9b082cd27273582
+        run: |
+          if [ -z "$GHEALTH_REFRESH_TOKEN" ]; then echo "Google Health not connected yet (no secrets) — skipping."; exit 0; fi
+          python3 tools/health_pull.py

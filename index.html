@@ -233,6 +233,14 @@ details.more textarea { margin-top:10px; }
 .stat span { font-size:12px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); }
 .sync { margin-top:14px; font-size:13.5px; color:var(--ink-3); }
 .sync.ok { color:var(--ok); } .sync.bad { color:var(--bad); }
+.hl { margin-top:10px; font-size:13.5px; color:var(--ink-2); display:flex; flex-wrap:wrap; gap:6px 16px; }
+.hl b { color:var(--ink); font-weight:600; }
+.hl .k { color:var(--ink-3); }
+.htwrap { overflow-x:auto; }
+table.ht { width:100%; border-collapse:collapse; font-size:13.5px; }
+table.ht th { text-align:left; font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); padding:0 10px 8px 0; font-weight:600; white-space:nowrap; }
+table.ht td { padding:7px 10px 7px 0; border-top:1px solid var(--line); color:var(--ink-2); white-space:nowrap; }
+table.ht td:first-child { color:var(--ink); font-weight:600; }
 .hist { display:grid; gap:10px; }
 .h {
   background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px 16px; box-shadow:var(--shadow);
@@ -380,7 +388,7 @@ footer { margin-top:34px; padding-top:18px; border-top:1px solid var(--line); fo
     <ul class="notes">
       <li>Open a session and tap <strong>Done</strong> under each exercise as you finish it &mdash; the tap time is the workout time. <strong>Modified</strong> if you changed weight, sets or reps; <strong>Couldn&rsquo;t</strong> if the body gave up. Nothing else is required.</li>
       <li>When every exercise has a status the <strong>session summary</strong> writes itself and lands in the Log. Add how you felt or paste watch / sleep stats only if you want to.</li>
-      <li><strong>Watch stats:</strong> share any text to <em>Workout</em> from Android&rsquo;s share sheet (works once the app is installed) and it attaches itself to that day&rsquo;s session.</li>
+      <li><strong>Watch data</strong> (sleep, steps, resting HR, workouts) arrives by itself every morning from Google Health once connected &mdash; it shows on each session card and in the Log. For anything else, share text to <em>Workout</em> from Android&rsquo;s share sheet and it attaches to that day&rsquo;s session.</li>
       <li>Form videos play right here (they need internet; everything else works offline). The page remembers which tab you were on.</li>
       <li><strong>Install it:</strong> Chrome on Android &rarr; &#8942; menu &rarr; <em>Add to Home screen</em>.</li>
     </ul>
@@ -418,6 +426,12 @@ footer { margin-top:34px; padding-top:18px; border-top:1px solid var(--line); fo
     </details>
   </div>
 
+  <div class="card" id="health-card" hidden>
+    <h2>From your watch <small id="health-upd"></small></h2>
+    <div class="htwrap"><table class="ht"><thead><tr><th>Day</th><th>Asleep</th><th>Deep &middot; REM</th><th>Resting HR</th><th>Steps</th><th>AZM</th><th>Workouts</th></tr></thead><tbody id="health-rows"></tbody></table></div>
+    <p class="hint">Sleep is listed on the morning you woke up. Pulled from Google Health every morning by the sync job.</p>
+  </div>
+
   <div class="hist" id="hist"></div>
   <p class="empty" id="empty">Nothing logged yet.</p>
 
@@ -429,6 +443,8 @@ footer { margin-top:34px; padding-top:18px; border-top:1px solid var(--line); fo
         <option>Walk / steps</option><option>Stairs</option><option>Rest day</option><option>Other</option>
       </select></label>
       <label>Duration (min)<input type="number" id="f-dur" min="0" step="1" placeholder="45" inputmode="numeric"></label>
+      <label>Energy<select id="f-energy"><option value="">&mdash;</option><option>Low</option><option>OK</option><option>High</option></select></label>
+      <label>Sleep felt<select id="f-sleep"><option value="">&mdash;</option><option>Bad</option><option>OK</option><option>Good</option></select></label>
       <label class="wide">Notes<input type="text" id="f-note" placeholder="12k steps, felt fresh"></label>
     </form>
     <div class="actions"><button class="btn primary" id="add">Add</button></div>
@@ -784,7 +800,7 @@ function setEntry(dayId, i, entry) {
   const day = DAY_BY_ID[dayId], e = day.ex[i], s = getSession(dayId, isoDate(), true);
   if (entry) s.ex[e.n] = { ...entry, at: (s.ex[e.n] && s.ex[e.n].at) || new Date().toISOString() };
   else delete s.ex[e.n];
-  if (!Object.keys(s.ex).length && !s.note && !s.feel) delete S()[skey(dayId, isoDate())];
+  if (!Object.keys(s.ex).length && !s.note && !s.feel && !s.energy) delete S()[skey(dayId, isoDate())];
   persist();
   renderLog(dayId, i); renderSession(dayId); renderWeek(); renderHist();
 }
@@ -812,6 +828,50 @@ $('#days').addEventListener('click', ev => {
   }
 });
 
+/* ---------- Watch data (health.json in the gist, pulled by the GitHub Action) ---------- */
+const HKEY = 'wt-health';
+const health = () => loadJSON(HKEY, null);
+const hday = d => ((health() || {}).days || {})[d];
+const fmtMin = m => m == null ? '' : `${Math.floor(m / 60)}h ${String(Math.round(m % 60)).padStart(2, '0')}m`;
+const fmtK = n => n == null ? '' : n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(n);
+/* Last night's sleep (stored on the wake date), today's resting HR, yesterday's steps. */
+function healthLine(date) {
+  const h = hday(date), y = new Date(date + 'T12:00'); y.setDate(y.getDate() - 1); const hy = hday(isoDate(y));
+  const parts = [];
+  if (h && h.sleep) { const st = h.sleep.stagesMin || {};
+    parts.push(`<span><span class="k">Last night</span> <b>${fmtMin(h.sleep.asleepMin)}</b>${st.deep ? ` · deep ${fmtMin(st.deep)}` : ''}${st.rem ? ` · REM ${fmtMin(st.rem)}` : ''}</span>`); }
+  if (h && h.restingHr) parts.push(`<span><span class="k">Resting HR</span> <b>${h.restingHr}</b></span>`);
+  if (hy && hy.steps != null) parts.push(`<span><span class="k">Yesterday</span> <b>${fmtK(hy.steps)} steps</b></span>`);
+  return parts.length ? `<div class="hl">${parts.join('')}</div>` : '';
+}
+function renderHealth() {
+  const h = health(), card = $('#health-card');
+  if (!h || !Object.keys(h.days || {}).length) { card.hidden = true; return; }
+  card.hidden = false;
+  $('#health-upd').textContent = 'updated ' + new Date(h.updated).toLocaleString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+  const days = Object.keys(h.days).sort().slice(-7).reverse();
+  $('#health-rows').innerHTML = days.map(d => {
+    const v = h.days[d], s = v.sleep || {}, st = s.stagesMin || {};
+    const ex = (v.exercises || []).map(e => esc(String(e.name || e.type || '').toLowerCase().replace(/_/g, ' ')) + (e.activeMin ? ` ${e.activeMin}m` : '')).join(', ');
+    return `<tr><td>${niceDate(d)}</td><td>${fmtMin(s.asleepMin) || '—'}</td><td>${st.deep ? fmtMin(st.deep) : '—'} · ${st.rem ? fmtMin(st.rem) : '—'}</td>` +
+      `<td>${v.restingHr ?? '—'}</td><td>${v.steps != null ? Number(v.steps).toLocaleString() : '—'}</td><td>${v.azm ?? '—'}</td><td>${ex || '—'}</td></tr>`;
+  }).join('');
+}
+async function fetchHealth(force) {
+  const g = gist(); if (!g || !ls.get(TKEY)) return;
+  if (!force && Date.now() - (+ls.get('wt-health-at') || 0) < 30 * 60000) return;
+  try {
+    const r = await gh('/gists/' + g.id), f = r.files['health.json']; if (!f) return;
+    const txt = f.truncated ? await (await fetch(f.raw_url)).text() : f.content;
+    const h = JSON.parse(txt), keys = Object.keys(h.days || {}).sort().slice(-60);
+    ls.set(HKEY, JSON.stringify({ updated:h.updated, errors:h.errors, days:Object.fromEntries(keys.map(k => [k, h.days[k]])) }));
+    ls.set('wt-health-at', String(Date.now()));
+    renderHealth(); DAYS.forEach(d => renderSession(d.id)); renderHist();
+  } catch (e) {}
+}
+const ENERGY = { low:'Low', ok:'OK', high:'High' };
+const energyHTML = s => `<div class="feel"><span>Energy before</span>${Object.entries(ENERGY).map(([k, v]) => `<button data-energy="${k}" class="${s && s.energy === k ? 'on' : ''}">${v}</button>`).join('')}</div>`;
+
 /* ---------- Session card + auto summary ---------- */
 function summaryLines(day, s) {
   return day.ex.filter(e => s.ex[e.n] && s.ex[e.n].s !== 'done').map(e => {
@@ -828,15 +888,15 @@ function renderSession(dayId) {
   const prev = thisWeekSession(dayId);
   if (!s || !Object.keys(s.ex).length) {
     box.className = 'card';
-    box.innerHTML = `<div class="sess-top"><b>Today · ${niceDate(date)}</b><span>0 / ${day.ex.length} logged</span></div>` +
+    box.innerHTML = `<div class="sess-top"><b>Today · ${niceDate(date)}</b><span>0 / ${day.ex.length} logged</span></div>` + healthLine(date) +
       (prev ? `<p class="hint">Already done this week on ${niceDate(prev.date)} — doing it again is fine, it just logs as a second session.</p>` :
-      `<p class="hint">Tap <b>Done</b> under each exercise as you finish it — the tap time is the workout time. Log later if you must; it still counts.</p>`);
+      `<p class="hint">Tap <b>Done</b> under each exercise as you finish it — the tap time is the workout time. Log later if you must; it still counts.</p>`) + energyHTML(s);
     return;
   }
   const st = sessionStats(day, s);
   const span = st.start === st.end ? `logged ${hhmm(st.start)}` : `${hhmm(st.start)} – ${hhmm(st.end)}`;
-  let html = `<div class="sess-top"><b>Today · ${niceDate(date)}</b><span>${st.logged} / ${st.total} logged · ${span}</span></div>` +
-    `<div class="bar"><i style="width:${Math.round(st.logged / st.total * 100)}%"></i></div>`;
+  let html = `<div class="sess-top"><b>Today · ${niceDate(date)}</b><span>${st.logged} / ${st.total} logged · ${span}</span></div>` + healthLine(date) +
+    `<div class="bar"><i style="width:${Math.round(st.logged / st.total * 100)}%"></i></div>` + energyHTML(s);
   if (!st.complete) {
     html += `<p class="hint">${st.total - st.logged} to go.</p><div class="btnrow"><button class="btn sm" data-sess="finish">Finish — skip the rest</button></div>`;
   } else {
@@ -853,9 +913,10 @@ function renderSession(dayId) {
   box.innerHTML = html;
 }
 $('#days').addEventListener('click', ev => {
-  const f = ev.target.closest('[data-feel]'), fin = ev.target.closest('[data-sess="finish"]');
-  if (!f && !fin) return;
+  const f = ev.target.closest('[data-feel]'), fin = ev.target.closest('[data-sess="finish"]'), en = ev.target.closest('[data-energy]');
+  if (!f && !fin && !en) return;
   const dayId = ev.target.closest('.panel').id.slice(2), s = getSession(dayId, isoDate(), true);
+  if (en) s.energy = s.energy === en.dataset.energy ? null : en.dataset.energy;
   if (fin) { DAY_BY_ID[dayId].ex.forEach((e, i) => { if (!s.ex[e.n]) { s.ex[e.n] = { s:'skip', w:e.w, sets:0, reps:null, note:'', at:new Date().toISOString() }; renderLog(dayId, i); } }); }
   if (f) s.feel = s.feel === f.dataset.feel ? null : f.dataset.feel;
   persist(); renderSession(dayId); renderWeek(); renderHist();
@@ -878,14 +939,16 @@ function renderHist() {
     if (it.kind === 'x') {
       const x = it.x;
       return `<article class="h"><div class="h-top"><b>${esc(x.type)}</b><span class="when">${niceDate(x.date)}${x.dur ? ' · ' + esc(x.dur) + ' min' : ''}</span>` +
-        `<button class="del" data-del-x="${it.i}" title="Delete">×</button></div>${x.note ? `<p class="note">${esc(x.note)}</p>` : ''}</article>`;
+        `<button class="del" data-del-x="${it.i}" title="Delete">×</button></div>` +
+        (x.energy || x.sleepFelt ? `<div class="h-sum">${x.energy ? `<span>Energy ${esc(x.energy)}</span>` : ''}${x.sleepFelt ? `<span>Sleep felt ${esc(x.sleepFelt)}</span>` : ''}</div>` : '') +
+        `${x.note ? `<p class="note">${esc(x.note)}</p>` : ''}</article>`;
     }
     const s = it.s, day = DAY_BY_ID[s.day], st = sessionStats(day, s), c = completion(st);
     const span = st.start ? (st.start === st.end ? hhmm(st.start) : `${hhmm(st.start)} – ${hhmm(st.end)}`) : '';
     const lines = day.ex.filter(e => s.ex[e.n]).map(e => { const r = s.ex[e.n]; return `<li><b>${esc(e.n)}</b> — ${MARK[r.s]} ${STATUS[r.s].toLowerCase()}${resultText(e, r) ? ' · ' + esc(resultText(e, r)) : ''}${r.note ? ` — “${esc(r.note)}”` : ''}</li>`; }).join('');
     return `<article class="h"><div class="h-top"><b>${esc(day.tag)}</b><span class="when">${niceDate(s.date)} · ${span}</span>` +
       `<span class="pill ${c}">${st.logged}/${st.total}${st.complete ? '' : ' · open'}</span><button class="del" data-del-s="${skey(s.day, s.date)}" title="Delete">×</button></div>` +
-      `<div class="h-sum"><span>✓ ${st.done}</span>${st.mod ? `<span>~ ${st.mod}</span>` : ''}${st.fail ? `<span>✗ ${st.fail}</span>` : ''}${st.skip ? `<span>– ${st.skip}</span>` : ''}${s.feel ? `<span>${FEEL[s.feel]}</span>` : ''}</div>` +
+      `<div class="h-sum"><span>✓ ${st.done}</span>${st.mod ? `<span>~ ${st.mod}</span>` : ''}${st.fail ? `<span>✗ ${st.fail}</span>` : ''}${st.skip ? `<span>– ${st.skip}</span>` : ''}${s.energy ? `<span>Energy ${ENERGY[s.energy]}</span>` : ''}${s.feel ? `<span>${FEEL[s.feel]}</span>` : ''}</div>` + healthLine(s.date) +
       `<details><summary>Details</summary><ul>${lines}</ul>${s.note ? `<p class="note">${esc(s.note)}</p>` : ''}</details></article>`;
   }).join('');
   const all = Object.values(S());
@@ -910,8 +973,8 @@ $('#hist').addEventListener('click', ev => {
 $('#add').addEventListener('click', ev => {
   ev.preventDefault();
   const date = $('#f-date').value; if (!date) return $('#f-date').focus();
-  X().push({ date, type:$('#f-type').value, dur:$('#f-dur').value.trim(), note:$('#f-note').value.trim(), at:new Date().toISOString() });
-  persist(); $('#f-dur').value = ''; $('#f-note').value = ''; renderHist();
+  X().push({ date, type:$('#f-type').value, dur:$('#f-dur').value.trim(), energy:$('#f-energy').value, sleepFelt:$('#f-sleep').value, note:$('#f-note').value.trim(), at:new Date().toISOString() });
+  persist(); ['#f-dur', '#f-note', '#f-energy', '#f-sleep'].forEach(s => $(s).value = ''); renderHist();
 });
 const download = (name, text, type) => {
   const a = document.createElement('a');
@@ -920,7 +983,7 @@ const download = (name, text, type) => {
 const payload = () => ({
   exported:new Date().toISOString(),
   program:DAYS.map(d => ({ id:d.id, tag:d.tag, exercises:d.ex.map(e => ({ name:e.n, plan:e.sr, start:e.w, hold:holdOf(e.w === 'BW' ? '1×' : e.w, e.hold), rest:e.rest, progress:e.prog })) })),
-  sessions:Object.values(S()), extras:X(),
+  sessions:Object.values(S()), extras:X(), health:health(),
 });
 $('#json').addEventListener('click', () => download(`workout-${isoDate()}.json`, JSON.stringify(payload(), null, 2), 'application/json'));
 $('#csv').addEventListener('click', () => {
@@ -982,6 +1045,7 @@ async function syncNow() {
     }
     ls.set('wt-synced', new Date().toISOString());
     setSync('Synced to your gist at ' + hhmm(new Date().toISOString()), 'ok');
+    fetchHealth(false);
   } catch (e) {
     setSync((navigator.onLine ? 'Sync failed — ' + e.message : 'Offline — will sync when back online') + '. Your data is safe on this phone.', 'bad');
   }
@@ -1018,7 +1082,7 @@ $('#sync-off').addEventListener('click', () => {
   try { localStorage.removeItem(TKEY); localStorage.removeItem(GKEY); localStorage.removeItem('wt-synced'); } catch (e) {}
   setSync('Cloud sync off. Data stays on this phone.'); showSyncInfo();
 });
-addEventListener('online', scheduleSync);
+addEventListener('online', () => { scheduleSync(); fetchHealth(false); });
 if (ls.get(TKEY)) {
   const last = ls.get('wt-synced');
   setSync(last ? 'Synced to your gist at ' + hhmm(last) : 'Connected — not synced yet', last ? 'ok' : '');
@@ -1089,7 +1153,7 @@ function acceptShare() {
 
 /* ---------- Boot ---------- */
 const shared = acceptShare();
-renderAll();
+renderAll(); renderHealth(); fetchHealth(false);
 $('#f-date').value = isoDate();
 showTab(location.hash.slice(1) || ls.get('tab') || 'overview', { silent:!location.hash });
 if (shared) { toast(shared); showTab('log'); }
