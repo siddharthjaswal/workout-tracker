@@ -74,6 +74,22 @@ nav.tabs::-webkit-scrollbar { display:none; }
 .card h2 small { font-weight:500; color:var(--ink-3); font-size:13px; margin-left:6px; }
 .card.accent { border-color:color-mix(in srgb,var(--accent) 45%,var(--line)); background:linear-gradient(180deg,var(--accent-soft),var(--surface)); }
 .card.accent h2 { color:var(--accent); }
+/* Next-up card, above the tabs on every page */
+.nextup { background:linear-gradient(180deg,var(--accent-soft),var(--surface)); border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line));
+  border-radius:var(--radius); padding:16px 18px; margin-bottom:14px; box-shadow:var(--shadow); }
+.nextup .nu-top { display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.nextup .nu-k { font-size:12px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--accent); }
+.nextup .nu-k.ok { color:var(--ok); }
+.nextup .nu-wk { font-size:12.5px; color:var(--ink-3); }
+.nextup h2 { font-size:21px; margin-top:4px; }
+.nextup h2 small { font-size:14px; font-weight:500; color:var(--ink-2); margin-left:6px; }
+.nextup .nu-meta { font-size:13.5px; color:var(--ink-2); margin-top:4px; }
+.nextup ul { margin:10px 0 0; padding-left:18px; font-size:13.5px; color:var(--ink-2); display:grid; gap:4px; }
+.nextup ul b { color:var(--ink); font-weight:600; }
+.nextup .nu-act { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:12px; }
+.nextup .nu-act a.btn { text-decoration:none; font-size:14px; font-weight:650; padding:9px 16px; border-radius:9px; background:var(--accent); color:#120804; }
+.nextup .nu-act a.btn.ghost { background:var(--surface-2); color:var(--ink); border:1px solid var(--line); }
+.nextup .nu-act span { font-size:13px; color:var(--ink-3); }
 
 /* This week: four session tiles */
 .wk { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
@@ -381,6 +397,8 @@ table.wt td.wrap { white-space:normal; min-width:180px; }
     <span class="chip">Home &middot; no gym</span>
   </div>
 </header>
+
+<section class="nextup" id="next-up" aria-live="polite"></section>
 
 <nav class="tabs" role="tablist" id="tabs"></nav>
 
@@ -824,6 +842,7 @@ function renderWeek() {
     const s = thisWeekSession(d.id);
     return `<a class="${s ? 'logged' : ''}" href="#${d.id}"><b>${esc(d.tag)}</b><span>${esc(d.title.split(',')[0])}</span><span class="d">${s ? niceDate(s.date) : 'not yet'}</span></a>`;
   }).join('');
+  renderNext();
 }
 
 /* ---------- Rest timer ---------- */
@@ -1439,6 +1458,53 @@ function exRows() {
     if (entries.length) out.push({ d, e, entries, next:exNext(e, entries) });
   }));
   return out;
+}
+/* ---- Next up: rotation Upper A → Lower A → Upper B → Lower B, skipping what this week already has ---- */
+const lifted = s => Object.values(s.ex).some(r => r.s === 'done' || r.s === 'mod');
+function nextPlan() {
+  const order = DAYS.map(d => d.id), [ws, we] = weekRange(), today = isoDate();
+  const done = Object.values(S()).filter(lifted).sort((a, b) => (a.date + ver(a)).localeCompare(b.date + ver(b)));
+  const last = done[done.length - 1];
+  const weekDone = [...new Set(done.filter(s => s.date >= ws && s.date <= we).map(s => s.day))];
+  const start = last ? (order.indexOf(last.day) + 1) % order.length : 0;
+  const rot = order.map((_, k) => order[(start + k) % order.length]);
+  const open = rot.filter(id => !weekDone.includes(id));
+  const todaySess = Object.values(S()).find(s => s.date === today && Object.keys(s.ex).length);
+  return { last, weekDone, rot, pick:open[0] || rot[0], then:open[1], weekComplete:!open.length, today, we,
+    daysLeft:Math.round((new Date(we + 'T12:00') - new Date(today + 'T12:00')) / 864e5) + 1, todaySess };
+}
+function renderNext() {
+  const box = $('#next-up'); if (!box) return;
+  const n = nextPlan(), pick = DAY_BY_ID[n.pick];
+  const wk = `<span class="nu-wk">This week ${n.weekDone.length}/4 · ${n.daysLeft} day${n.daysLeft === 1 ? '' : 's'} left</span>`;
+  // a session started today and not finished → continue it
+  if (n.todaySess) {
+    const d = DAY_BY_ID[n.todaySess.day], st = sessionStats(d, n.todaySess);
+    if (!st.complete) {
+      box.innerHTML = `<div class="nu-top"><span class="nu-k">In progress</span>${wk}</div><h2>${esc(d.tag)}<small>${esc(d.title)}</small></h2>` +
+        `<p class="nu-meta">${st.logged} of ${st.total} exercises logged${st.start ? ' · started ' + hhmm(st.start) : ''}</p>` +
+        `<div class="nu-act"><a class="btn" href="#${d.id}">Continue ${esc(d.tag)} →</a></div>`;
+      return;
+    }
+  }
+  const liftedToday = n.todaySess && lifted(n.todaySess);
+  const ex = exRows().filter(r => r.d.id === pick.id && !/^Hold/.test(r.next[0]));       // what changes next time
+  const notes = ex.slice(0, 3).map(r => `<li><b>${esc(r.e.n)}</b> — ${esc(r.next[0])}</li>`).join('');
+  const prev = Object.values(S()).filter(s => s.day === pick.id && lifted(s)).sort((a, b) => b.date.localeCompare(a.date))[0];
+  const prevTxt = prev ? (() => { const st = sessionStats(pick, prev); return `last done ${niceDate(prev.date)} · ${st.done + st.mod}/${st.total} exercises`; })() : 'first time';
+  let head, when = '';
+  if (liftedToday) { head = `<span class="nu-k ok">✓ ${esc(DAY_BY_ID[n.todaySess.day].tag)} done today</span>`; when = 'Next session — tomorrow or the day after. Today: stretch and walk after dinner.'; }
+  else if (n.weekComplete) { head = `<span class="nu-k ok">✓ Week complete</span>`; when = 'All four done — walk until Saturday. This one opens next week.'; }
+  else if (n.weekDone.length + n.daysLeft < 4) head = `<span class="nu-k">Next up</span>`, when = `Four can’t fit before Saturday now — get this one in if you can.`;
+  else head = `<span class="nu-k">Next up</span>`;
+  const after = n.last ? `after ${esc(DAY_BY_ID[n.last.day].tag)} on ${niceDate(n.last.date)}` : 'start of the rotation';
+  box.innerHTML = `<div class="nu-top">${head}${wk}</div>` +
+    `<h2>${esc(pick.tag)}<small>${esc(pick.title)}</small></h2>` +
+    `<p class="nu-meta">${pick.ex.length} exercises · ${esc(pick.time)} · ${prevTxt} · ${after}</p>` +
+    (when ? `<p class="nu-meta">${esc(when)}</p>` : '') +
+    (notes ? `<ul>${notes}</ul>` : '') +
+    `<div class="nu-act"><a class="btn${liftedToday || n.weekComplete ? ' ghost' : ''}" href="#${pick.id}">${liftedToday || n.weekComplete ? 'Preview' : 'Start'} ${esc(pick.tag)} →</a>` +
+    (n.then && !n.weekComplete ? `<span>Then ${esc(DAY_BY_ID[n.then].tag)}</span>` : '') + `</div>`;
 }
 function renderExTable(rows) {
   $('#pg-ex').innerHTML = rows.length ? `<thead><tr><th>Exercise</th><th>Last three times</th><th>Next time</th></tr></thead><tbody>` + rows.map(({ d, e, entries, next }) =>
