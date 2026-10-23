@@ -467,6 +467,8 @@ table.wt td.wrap { white-space:normal; min-width:180px; }
     <button data-r="14">2 weeks</button><button data-r="28">4 weeks</button><button data-r="56">8 weeks</button><button data-r="all">All</button>
     <button class="refresh" id="pg-refresh" title="Fetch the latest watch data and notes">Refresh</button>
   </div>
+  <div class="card accent" id="pg-empty" hidden><h2>This device doesn&rsquo;t have your log yet</h2>
+    <p class="hint" style="margin-top:0" id="pg-empty-msg"></p></div>
   <div class="kpis" id="pg-kpis"></div>
   <div class="card"><h2>What to work on</h2><ul class="ins" id="pg-ins"></ul></div>
   <div class="card coach" id="pg-coach" hidden></div>
@@ -742,6 +744,13 @@ const persist = () => {
   scheduleSync();
 };
 const skey = (dayId, date) => `${date}|${dayId}`;
+/* Multi-device merge: every session carries `upd` (last change); deletions leave a dated tombstone so a merge can't resurrect them. */
+const touch = s => { s.upd = new Date().toISOString(); return s; };
+const ver = s => s.upd || Object.values(s.ex || {}).map(r => r.at).sort().pop() || '';
+const DKEY = 'wt-deleted';
+let tombs = null;
+const T = () => tombs ?? (tombs = loadJSON(DKEY, {}));
+const bury = keys => { const t = new Date().toISOString(); keys.forEach(k => T()[k] = t); ls.set(DKEY, JSON.stringify(T())); };
 const getSession = (dayId, date, create) => {
   const k = skey(dayId, date);
   if (!S()[k] && create) S()[k] = { date, day:dayId, ex:{}, feel:null, note:'' };
@@ -896,7 +905,8 @@ function setEntry(dayId, i, entry) {
   const day = DAY_BY_ID[dayId], e = day.ex[i], s = getSession(dayId, isoDate(), true);
   if (entry) s.ex[e.n] = { ...entry, at: (s.ex[e.n] && s.ex[e.n].at) || new Date().toISOString() };
   else delete s.ex[e.n];
-  if (!Object.keys(s.ex).length && !s.note && !s.feel && !s.energy) delete S()[skey(dayId, isoDate())];
+  touch(s);
+  if (!Object.keys(s.ex).length && !s.note && !s.feel && !s.energy) { delete S()[skey(dayId, isoDate())]; bury([skey(dayId, isoDate())]); }
   persist();
   renderLog(dayId, i); renderSession(dayId); renderWeek(); renderHist();
 }
@@ -1017,6 +1027,7 @@ $('#days').addEventListener('click', ev => {
   if (!f && !fin && !en) return;
   const dayId = ev.target.closest('.panel').id.slice(2), s = getSession(dayId, isoDate(), true);
   if (en) s.energy = s.energy === en.dataset.energy ? null : en.dataset.energy;
+  touch(s);
   if (fin) { DAY_BY_ID[dayId].ex.forEach((e, i) => { if (!s.ex[e.n]) { s.ex[e.n] = { s:'skip', w:e.w, sets:0, reps:null, note:'', at:new Date().toISOString() }; renderLog(dayId, i); } }); }
   if (f) s.feel = s.feel === f.dataset.feel ? null : f.dataset.feel;
   persist(); renderSession(dayId); renderWeek(); renderHist();
@@ -1025,7 +1036,7 @@ let noteTimer;
 $('#days').addEventListener('input', ev => {
   const t = ev.target.closest('[data-sess="note"]'); if (!t) return;
   const dayId = t.closest('.panel').id.slice(2), s = getSession(dayId, isoDate(), true);
-  s.note = t.value; clearTimeout(noteTimer); noteTimer = setTimeout(() => { persist(); renderHist(); }, 400);
+  s.note = t.value; touch(s); clearTimeout(noteTimer); noteTimer = setTimeout(() => { persist(); renderHist(); }, 400);
 });
 
 /* ---------- Log tab ---------- */
@@ -1067,7 +1078,8 @@ const renderAll = () => {
 $('#hist').addEventListener('click', ev => {
   const b = ev.target.closest('[data-del-s], [data-del-x]'); if (!b) return;
   if (!confirm('Delete this entry?')) return;
-  if (b.dataset.delS) delete S()[b.dataset.delS]; else X().splice(+b.dataset.delX, 1);
+  if (b.dataset.delS) { delete S()[b.dataset.delS]; bury([b.dataset.delS]); }
+  else { const x = X().splice(+b.dataset.delX, 1)[0]; if (x && x.at) bury(['x:' + x.at]); }
   persist(); renderAll();
 });
 $('#add').addEventListener('click', ev => {
@@ -1083,7 +1095,7 @@ const download = (name, text, type) => {
 const payload = () => ({
   exported:new Date().toISOString(),
   program:DAYS.map(d => ({ id:d.id, tag:d.tag, exercises:d.ex.map(e => ({ name:e.n, plan:e.sr, start:e.w, hold:holdOf(e.w === 'BW' ? '1×' : e.w, e.hold), rest:e.rest, progress:e.prog })) })),
-  sessions:Object.values(S()), extras:X(), health:health(),
+  sessions:Object.values(S()), extras:X(), deleted:T(),
 });
 $('#json').addEventListener('click', () => download(`workout-${isoDate()}.json`, JSON.stringify(payload(), null, 2), 'application/json'));
 $('#csv').addEventListener('click', () => {
@@ -1099,6 +1111,7 @@ $('#csv').addEventListener('click', () => {
 });
 $('#clear').addEventListener('click', () => {
   if (!confirm('Delete every logged session and entry? This cannot be undone.')) return;
+  bury([...Object.keys(S()), ...X().filter(x => x.at).map(x => 'x:' + x.at)]);
   sessions = {}; extras = []; persist(); renderAll();
 });
 
@@ -1136,8 +1149,13 @@ async function syncNow() {
   if (syncing) { syncAgain = true; return; }
   syncing = true; setSync('Syncing…');
   try {
-    const files = { [GFILE]: { content: JSON.stringify(payload(), null, 2) } };
     let g = gist();
+    if (g) {
+      try { mergeRemote(await pullRemote(g)); }
+      catch (e) { if (!/404/.test(e.message)) throw e; try { localStorage.removeItem(GKEY); } catch (x) {} g = null; }   // gist was replaced
+    }
+    if (!g) { g = await findGist(); if (g) { ls.set(GKEY, JSON.stringify(g)); mergeRemote(await pullRemote(g)); } }
+    const files = { [GFILE]: { content: JSON.stringify(payload(), null, 2) } };
     if (g) await gh('/gists/' + g.id, 'PATCH', { files });
     else {
       const r = await gh('/gists', 'POST', { description:GDESC, public:false, files });
@@ -1147,10 +1165,31 @@ async function syncNow() {
     setSync('Synced to your gist at ' + hhmm(new Date().toISOString()), 'ok');
     fetchHealth(false);
   } catch (e) {
-    setSync((navigator.onLine ? 'Sync failed — ' + e.message : 'Offline — will sync when back online') + '. Your data is safe on this phone.', 'bad');
+    setSync((navigator.onLine ? 'Sync failed — ' + e.message : 'Offline — will sync when back online') + '. Your data is safe on this device.', 'bad');
   }
   syncing = false; showSyncInfo();
   if (syncAgain) { syncAgain = false; scheduleSync(); }
+}
+async function pullRemote(g) {
+  const r = await gh('/gists/' + g.id), f = r.files[GFILE];
+  if (!f) return null;
+  return JSON.parse(f.truncated ? await (await fetch(f.raw_url)).text() : f.content);
+}
+/* Union of this device and the cloud: newest version of each session wins, tombstones win over older copies. */
+function mergeRemote(p) {
+  if (!p) return false;
+  const tomb = { ...(p.deleted || {}) };
+  Object.entries(T()).forEach(([k, t]) => { if (!tomb[k] || t > tomb[k]) tomb[k] = t; });
+  const all = { ...S() }, before = JSON.stringify(S());
+  (p.sessions || []).forEach(s => { const k = skey(s.day, s.date), l = all[k]; if (!l || ver(s) > ver(l)) all[k] = s; });
+  Object.keys(all).forEach(k => { if (tomb[k] && ver(all[k]) <= tomb[k]) delete all[k]; });
+  const xs = {}; [...(p.extras || []), ...X()].forEach(x => { if (x.at) xs[x.at] = x; });
+  const ex = Object.values(xs).filter(x => !tomb['x:' + x.at]).sort((a, b) => a.at.localeCompare(b.at));
+  const changed = before !== JSON.stringify(all) || ex.length !== X().length;
+  sessions = all; extras = ex; tombs = tomb;
+  ls.set(SKEY, JSON.stringify(sessions)); ls.set(XKEY, JSON.stringify(extras)); ls.set(DKEY, JSON.stringify(tombs));
+  if (changed) renderAll();
+  return changed;
 }
 async function restoreFromCloud(auto) {
   let g = gist();
@@ -1158,9 +1197,9 @@ async function restoreFromCloud(auto) {
   if (!g) { if (!auto) setSync('No workout gist found on this account yet — it gets created on the first sync.'); return false; }
   const r = await gh('/gists/' + g.id);
   const p = JSON.parse(r.files[GFILE].content);
-  if (!auto && Object.keys(S()).length && !confirm(`Replace the ${Object.keys(S()).length} session(s) on this phone with the ${p.sessions.length} in the cloud (saved ${new Date(p.exported).toLocaleString()})?`)) return false;
-  sessions = Object.fromEntries(p.sessions.map(s => [skey(s.day, s.date), s])); extras = p.extras || [];
-  ls.set(SKEY, JSON.stringify(sessions)); ls.set(XKEY, JSON.stringify(extras));
+  if (!auto && Object.keys(S()).length && !confirm(`Replace the ${Object.keys(S()).length} session(s) on this device with the ${p.sessions.length} in the cloud (saved ${new Date(p.exported).toLocaleString()})?`)) return false;
+  sessions = Object.fromEntries(p.sessions.map(s => [skey(s.day, s.date), s])); extras = p.extras || []; tombs = p.deleted || {};
+  ls.set(SKEY, JSON.stringify(sessions)); ls.set(XKEY, JSON.stringify(extras)); ls.set(DKEY, JSON.stringify(tombs));
   renderAll(); setSync(`Restored ${p.sessions.length} session(s) from your gist.`, 'ok');
   return true;
 }
@@ -1502,6 +1541,15 @@ function renderProgress() {
   hideTip();
   document.querySelectorAll('#pg-range button[data-r]').forEach(b => b.classList.toggle('on', b.dataset.r === pgRange));
   const H = HD(), has = Object.keys(H).length > 0, dates = pgDates(), lifts = liftDates(), ex = exRows();
+  const empty = !Object.keys(S()).length && !has;
+  const blocks = [...document.querySelectorAll('#p-progress > *')].filter(el => !el.matches('.panel-head, #pg-range, #pg-empty'));
+  $('#pg-empty').hidden = !empty; blocks.forEach(b => b.hidden = empty);
+  if (empty) {
+    $('#pg-empty-msg').innerHTML = ls.get(TKEY)
+      ? 'Cloud sync is connected — fetching your log now. If nothing appears, open the <a href="#log">Log</a> tab and check the sync line.'
+      : 'Your log lives on the device where you tap <b>Done</b>, plus your private cloud copy. To see it here: <a href="#log">Log</a> → <em>Cloud sync</em> → paste your token → <b>Save &amp; sync</b>. Devices merge, so your phone and this one stay in step.';
+    return;
+  }
   $('#pg-nohealth').hidden = has; $('#pg-health').hidden = !has;
   renderKpis(H); renderInsights(H, ex); renderCoach(); renderWeeks(dates, H); renderExTable(ex); renderDaily(dates, H);
   if (!has) return;
@@ -1590,7 +1638,7 @@ function acceptShare() {
   let s = Object.values(S()).filter(x => x.date === today).sort((a, b) => (sessionStats(DAY_BY_ID[b.day], b).end || '').localeCompare(sessionStats(DAY_BY_ID[a.day], a).end || ''))[0];
   if (!s) { const y = new Date(); y.setDate(y.getDate() - 1); s = Object.values(S()).filter(x => x.date === isoDate(y))[0]; }
   if (s) {
-    s.note = (s.note ? s.note.trimEnd() + '\n\n' : '') + text;
+    s.note = (s.note ? s.note.trimEnd() + '\n\n' : '') + text; touch(s);
     persist(); return `Added to ${DAY_BY_ID[s.day].tag} (${niceDate(s.date)})`;
   }
   X().push({ date:today, type:'Watch stats', dur:'', note:text, at:new Date().toISOString() });

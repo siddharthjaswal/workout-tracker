@@ -23,7 +23,7 @@ jobs:
           GHEALTH_CLIENT_SECRET: ${{ secrets.GHEALTH_CLIENT_SECRET }}
           GHEALTH_REFRESH_TOKEN: ${{ secrets.GHEALTH_REFRESH_TOKEN }}
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
-          GIST_ID: 656573d3866a2276c9b082cd27273582
+          GIST_ID: ${{ secrets.GIST_ID }}
           DAYS: ${{ inputs.days || '14' }}
         run: |
           if [ -z "$GHEALTH_REFRESH_TOKEN" ]; then echo "Google Health not connected yet (no secrets) — skipping."; exit 0; fi

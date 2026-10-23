@@ -26,10 +26,18 @@ Single-file PWA for a 4-session Upper/Lower dumbbell program with inline form vi
    python3 tools/health_auth.py ~/Downloads/client_secret_*.json
    ```
    It opens the consent page, catches the redirect, and stores `GHEALTH_CLIENT_ID`, `GHEALTH_CLIENT_SECRET`, `GHEALTH_REFRESH_TOKEN` as repository secrets.
-8. Store the gist token too (same token the app uses, or a new one with only the `gist` scope):
+8. Store the gist ID and token as secrets — never put the ID in the repo, since anyone holding a secret gist's ID can read it:
+   ```bash
+   gh secret set GIST_ID
+   ```
+   Then the gist token (same token the app uses, or a new one with only the `gist` scope):
    ```bash
    gh secret set GIST_TOKEN
    ```
 9. Run it once and check: `gh workflow run health.yml`, then `gh run watch`. From then on it runs daily at 09:00 IST; the app shows the data on each session card and under *From your watch* in the Log.
 
-Secrets never touch the repo contents; the data lands only in your secret gist.
+Secrets never touch the repo contents; the data lands only in your secret gist. If its ID ever leaks, run `tools/rotate_gist.sh` — it copies everything to a new secret gist, updates the secret, and offers to delete the old one; the app re-links by itself.
+
+## Several devices
+
+Every device with the token merges on each sync: the newest version of each session wins and deletions stick (tombstones), so the phone and a laptop can both log.
