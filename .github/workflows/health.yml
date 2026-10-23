@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: '30 3 * * *'   # 09:00 IST, after the night's sleep has synced
   workflow_dispatch:
+    inputs:
+      days:
+        description: 'How many days back to pull'
+        default: '14'
 
 permissions:
   contents: read
@@ -20,6 +24,7 @@ jobs:
           GHEALTH_REFRESH_TOKEN: ${{ secrets.GHEALTH_REFRESH_TOKEN }}
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
           GIST_ID: 656573d3866a2276c9b082cd27273582
+          DAYS: ${{ inputs.days || '14' }}
         run: |
           if [ -z "$GHEALTH_REFRESH_TOKEN" ]; then echo "Google Health not connected yet (no secrets) — skipping."; exit 0; fi
           python3 tools/health_pull.py
