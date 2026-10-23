@@ -3,6 +3,7 @@
 
 Env: GHEALTH_CLIENT_ID, GHEALTH_CLIENT_SECRET, GHEALTH_REFRESH_TOKEN, GIST_TOKEN, GIST_ID, [DAYS=14]
 Stdlib only, so it runs anywhere. Every data type is pulled independently: one failing never blocks the rest.
+Field names follow the v4 discovery document (health.googleapis.com/$discovery/rest?version=v4).
 """
 import json, os, sys, urllib.request, urllib.parse, urllib.error
 from datetime import date, datetime, timedelta, timezone
@@ -57,17 +58,26 @@ class Health:
         return out
 
     def daily(self, dtype, d0, d1):
-        civil = lambda d: {'year': d.year, 'month': d.month, 'day': d.day}
+        civil = lambda d: {'date': {'year': d.year, 'month': d.month, 'day': d.day}}
         body = {'range': {'start': civil(d0), 'end': civil(d1)}, 'windowSizeDays': 1, 'pageSize': 1000}
         r = http(API + dtype + '/dataPoints:dailyRollUp', 'POST', body, self.h)
         return r.get('rollupDataPoints', [])
 
 
 def civil_date(c):
-    """CivilDateTime {year,month,day,...} or an RFC3339/civil string -> 'YYYY-MM-DD'."""
+    """CivilDateTime {date:{year,month,day},time:{...}} | {year,month,day} | RFC3339 string -> 'YYYY-MM-DD'."""
     if isinstance(c, dict):
-        return f"{c['year']:04d}-{c['month']:02d}-{c['day']:02d}"
-    return str(c)[:10]
+        d = c.get('date', c)
+        return f"{d['year']:04d}-{d['month']:02d}-{d['day']:02d}"
+    return str(c)[:10] if c else None
+
+
+def num(x):
+    if x is None: return None
+    try: return int(x)
+    except (TypeError, ValueError):
+        try: return round(float(x), 1)
+        except (TypeError, ValueError): return None
 
 
 def secs(s):
@@ -75,8 +85,9 @@ def secs(s):
     except Exception: return 0.0
 
 
-def iso(ts):
-    return ts if ts else None
+def ts_minutes(a, b):
+    try: return (datetime.fromisoformat(b.replace('Z', '+00:00')) - datetime.fromisoformat(a.replace('Z', '+00:00'))).total_seconds() / 60
+    except Exception: return 0.0
 
 
 def pull(h):
@@ -88,38 +99,57 @@ def pull(h):
         try: fn()
         except Exception as e: errors.append(f'{label}: {e}')
 
-    # ---- daily rollups
+    # ---- daily rollups (exact value fields from the discovery doc)
     def rollup(dtype, key, pick):
         d0, d1 = start, today + timedelta(days=1)
-        if dtype == 'heart-rate' and (d1 - d0).days > 14: d0 = d1 - timedelta(days=14)
+        if dtype in ('heart-rate', 'total-calories', 'active-minutes') and (d1 - d0).days > 14: d0 = d1 - timedelta(days=14)
         for p in h.daily(dtype, d0, d1):
             d = civil_date(p.get('civilStartTime'))
             v = pick(p)
-            if v is not None: day(d)[key] = v
-    num = lambda x: None if x is None else (int(x) if str(x).lstrip('-').isdigit() else float(x))
-    first = lambda o: next(iter(o.values())) if isinstance(o, dict) and o else None
-    attempt('steps', lambda: rollup('steps', 'steps', lambda p: num(first(p.get('steps')))))
-    attempt('total-calories', lambda: rollup('total-calories', 'calories', lambda p: num(first(p.get('totalCalories')))))
-    attempt('active-zone-minutes', lambda: rollup('active-zone-minutes', 'azm', lambda p: num(first(p.get('activeZoneMinutes')))))
-    attempt('distance', lambda: rollup('distance', 'distance', lambda p: num(first(p.get('distance')))))
-    attempt('heart-rate', lambda: rollup('heart-rate', 'hr', lambda p: p.get('heartRate')))
+            if d and v is not None: day(d)[key] = v
+    attempt('steps', lambda: rollup('steps', 'steps', lambda p: num((p.get('steps') or {}).get('countSum'))))
+    attempt('total-calories', lambda: rollup('total-calories', 'calories', lambda p: num((p.get('totalCalories') or {}).get('kcalSum'))))
+    attempt('distance', lambda: rollup('distance', 'distanceKm', lambda p: None if (p.get('distance') or {}).get('millimetersSum') is None else round(int(p['distance']['millimetersSum']) / 1e6, 2)))
+    def azm(p):
+        z = p.get('activeZoneMinutes')
+        if not z: return None
+        return sum(int(z.get(k) or 0) for k in ('sumInFatBurnHeartZone', 'sumInCardioHeartZone', 'sumInPeakHeartZone'))
+    attempt('active-zone-minutes', lambda: rollup('active-zone-minutes', 'azm', azm))
+    def hr(p):
+        v = p.get('heartRate')
+        if not v: return None
+        return {'min': num(v.get('beatsPerMinuteMin')), 'avg': num(v.get('beatsPerMinuteAvg')), 'max': num(v.get('beatsPerMinuteMax'))}
+    attempt('heart-rate', lambda: rollup('heart-rate', 'hr', hr))
 
-    # ---- daily summaries via list
-    def daily_list(dtype, field, key, pick):
-        for p in h.list(dtype, f'{field}.date >= "{f}"'):
+    # ---- daily summaries: list with the snake_case daily filter; rollup as fallback
+    def daily_list(dtype, field, flt_field, key, pick):
+        for p in h.list(dtype, f'{flt_field}.date >= "{f}"'):
             v = p.get(field) or {}
             d = civil_date(v.get('date'))
             if d: day(d)[key] = pick(v)
-    attempt('resting-hr', lambda: daily_list('daily-resting-heart-rate', 'dailyRestingHeartRate', 'restingHr', lambda v: num(v.get('beatsPerMinute'))))
-    attempt('hrv', lambda: daily_list('daily-heart-rate-variability', 'dailyHeartRateVariability', 'hrv', lambda v: {k: v[k] for k in v if k != 'date'}))
+    def resting():
+        try:
+            daily_list('daily-resting-heart-rate', 'dailyRestingHeartRate', 'daily_resting_heart_rate', 'restingHr', lambda v: num(v.get('beatsPerMinute')))
+        except Exception as e:
+            errors.append(f'resting-hr list: {e}')
+            rollup('daily-resting-heart-rate', 'restingHr', lambda p: num((p.get('restingHeartRatePersonalRange') or {}).get('beatsPerMinuteMin')))
+    attempt('resting-hr', resting)
+    def hrv():
+        try:
+            daily_list('daily-heart-rate-variability', 'dailyHeartRateVariability', 'daily_heart_rate_variability', 'hrv',
+                       lambda v: {'rmssd': num(v.get('averageHeartRateVariabilityMilliseconds')), 'deepSleepRmssd': num(v.get('deepSleepRootMeanSquareOfSuccessiveDifferencesMilliseconds')), 'nonRemHr': num(v.get('nonRemHeartRateBeatsPerMinute'))})
+        except Exception as e:
+            errors.append(f'hrv list: {e}')
+            rollup('daily-heart-rate-variability', 'hrv', lambda p: {'rmssd': num((p.get('heartRateVariabilityPersonalRange') or {}).get('averageHeartRateVariabilityMillisecondsMin'))})
+    attempt('hrv', hrv)
 
     # ---- weight samples
     def weight():
-        for p in h.list('weight', f'weight.sample_time.civil_time >= "{f}T00:00:00"'):
+        for p in h.list('weight', f'weight.sample_time.civil_time >= "{f}"'):
             w = p.get('weight') or {}
             st = w.get('sampleTime') or {}
             d = civil_date(st.get('civilTime') or st.get('physicalTime'))
-            if d: day(d)['weight'] = {k: v for k, v in w.items() if k != 'sampleTime'}
+            if d and w.get('weightGrams') is not None: day(d)['weightKg'] = round(float(w['weightGrams']) / 1000, 1)
     attempt('weight', weight)
 
     # ---- sleep: one record per night, keyed by the morning you woke up
@@ -127,25 +157,24 @@ def pull(h):
         for p in h.list('sleep', f'sleep.interval.civil_end_time >= "{f}"'):
             s = p.get('sleep') or {}
             iv = s.get('interval') or {}
-            end = iv.get('endTime'); st = iv.get('startTime')
-            d = civil_date(iv.get('civilEndTime') or end)
+            d = civil_date(iv.get('civilEndTime') or iv.get('endTime'))
             if not d: continue
+            summ = s.get('summary') or {}
             stages = {}
-            for sg in s.get('stages') or []:
-                t = (sg.get('type') or '?').lower()
-                si = sg.get('interval') or {}
-                dur = secs(sg.get('duration')) if sg.get('duration') else 0
-                if not dur and si.get('startTime') and si.get('endTime'):
-                    dur = (datetime.fromisoformat(si['endTime'].replace('Z', '+00:00')) - datetime.fromisoformat(si['startTime'].replace('Z', '+00:00'))).total_seconds()
-                stages[t] = stages.get(t, 0) + dur / 60
-            total = 0
-            if st and end:
-                total = (datetime.fromisoformat(end.replace('Z', '+00:00')) - datetime.fromisoformat(st.replace('Z', '+00:00'))).total_seconds() / 60
-            asleep = total - stages.get('awake', 0) if stages else total
-            rec = {'start': iso(st), 'end': iso(end), 'inBedMin': round(total), 'asleepMin': round(asleep),
-                   'stagesMin': {k: round(v) for k, v in stages.items()}, 'summary': s.get('summary'), 'type': s.get('type')}
+            for sg in summ.get('stagesSummary') or []:
+                stages[(sg.get('type') or '?').lower()] = num(sg.get('minutes'))
+            if not stages:
+                for sg in s.get('stages') or []:
+                    t = (sg.get('type') or '?').lower()
+                    stages[t] = round(stages.get(t, 0) + ts_minutes(sg.get('startTime', ''), sg.get('endTime', '')))
+            in_bed = num(summ.get('minutesInSleepPeriod')) or round(ts_minutes(iv.get('startTime', ''), iv.get('endTime', '')))
+            asleep = num(summ.get('minutesAsleep'))
+            if asleep is None: asleep = in_bed - (stages.get('awake') or 0)
+            rec = {'start': iv.get('startTime'), 'end': iv.get('endTime'), 'inBedMin': in_bed, 'asleepMin': asleep,
+                   'awakeMin': num(summ.get('minutesAwake')), 'toFallAsleepMin': num(summ.get('minutesToFallAsleep')),
+                   'stagesMin': stages, 'type': s.get('type')}
             prev = day(d).get('sleep')
-            if not prev or rec['inBedMin'] > prev['inBedMin']: day(d)['sleep'] = rec   # keep the main sleep, not a nap
+            if not prev or (rec['inBedMin'] or 0) > (prev['inBedMin'] or 0): day(d)['sleep'] = rec   # keep the main sleep, not a nap
     attempt('sleep', sleep)
 
     # ---- exercise sessions
@@ -155,9 +184,15 @@ def pull(h):
             iv = e.get('interval') or {}
             d = civil_date(iv.get('civilStartTime') or iv.get('startTime'))
             if not d: continue
+            m = e.get('metricsSummary') or {}
+            z = m.get('heartRateZoneDurations') or {}
             rec = {'type': e.get('exerciseType'), 'name': e.get('displayName'), 'start': iv.get('startTime'), 'end': iv.get('endTime'),
                    'activeMin': round(secs(e.get('activeDuration')) / 60) if e.get('activeDuration') else None,
-                   'metrics': e.get('metricsSummary'), 'source': (p.get('dataSource') or {}).get('recordingMethod')}
+                   'avgHr': num(m.get('averageHeartRateBeatsPerMinute')), 'kcal': num(m.get('caloriesKcal')), 'steps': num(m.get('steps')),
+                   'azm': num(m.get('activeZoneMinutes')),
+                   'distanceKm': None if m.get('distanceMillimeters') is None else round(int(m['distanceMillimeters']) / 1e6, 2),
+                   'zonesMin': {k.replace('Time', ''): round(secs(v) / 60) for k, v in z.items()} if z else None,
+                   'source': (p.get('dataSource') or {}).get('recordingMethod')}
             day(d).setdefault('exercises', []).append(rec)
     attempt('exercise', exercise)
     return days
@@ -188,7 +223,6 @@ def main():
     got = sorted(days)
     print(f'pulled {len(days)} day(s): {got[0] if got else "-"} .. {got[-1] if got else "-"}; gist updated')
     for e in errors: print('warning:', e)
-    if days and not errors: return
     if not days: sys.exit('nothing pulled — check scopes and the Google Health app sync')
 
 
