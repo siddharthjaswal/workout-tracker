@@ -6,6 +6,7 @@ Single-file PWA for a 4-session Upper/Lower dumbbell program with inline form vi
 - `sw.js`, `manifest.webmanifest`, icons — offline shell, install, Android share target.
 - The log syncs to a secret GitHub gist (`workout.json`) with a gist-scoped token pasted once in the Log tab.
 - `health.json` in the same gist holds watch data (sleep, steps, resting HR, workouts) pulled from the Google Health API by `.github/workflows/health.yml` every morning.
+- `reviews.json` in the same gist holds the weekly coach notes (`{reviews:[{week, range, title, written, body[], focus[]}]}`, `**bold**` allowed). The Progress tab shows the latest one next to its own computed "What to work on" list, KPI tiles, steps/sleep/heart charts and the weekly and exercise tables.
 
 ## Connecting Google Health (one-time, ~10 minutes)
 
