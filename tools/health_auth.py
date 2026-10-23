@@ -15,9 +15,12 @@ PORT = 8765
 REDIRECT = f'http://127.0.0.1:{PORT}/'
 
 if len(sys.argv) < 2: sys.exit(__doc__)
-cfg = json.load(open(sys.argv[1]))
-cfg = cfg.get('installed') or cfg.get('web') or cfg
+raw = json.load(open(sys.argv[1]))
+cfg = raw.get('installed') or raw.get('web') or raw
 cid, csec = cfg['client_id'], cfg['client_secret']
+if 'web' in raw and REDIRECT not in (cfg.get('redirect_uris') or []):
+    print(f'Note: this is a "Web application" client. Google will reject the login (redirect_uri_mismatch) unless\n'
+          f'{REDIRECT} is listed under its Authorized redirect URIs in the Cloud console — or create a "Desktop app" client instead.\n')
 state = secrets.token_urlsafe(16)
 url = 'https://accounts.google.com/o/oauth2/v2/auth?' + urllib.parse.urlencode({
     'client_id': cid, 'redirect_uri': REDIRECT, 'response_type': 'code', 'scope': SCOPES,
