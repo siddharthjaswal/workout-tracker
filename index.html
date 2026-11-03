@@ -315,7 +315,11 @@ footer { margin-top:34px; padding-top:18px; border-top:1px solid var(--line); fo
 .filters button { font-size:13px; font-weight:600; padding:6px 12px; border-radius:999px; cursor:pointer; border:1px solid var(--line); background:var(--surface); color:var(--ink-2); }
 .filters button.on { border-color:var(--ink-2); color:var(--ink); background:var(--surface-2); }
 .filters .refresh { margin-left:auto; }
-.kpis { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:16px; }
+.kpis { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:16px; }
+.wform { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:-2px 0 14px; }
+.wform input { width:92px; font-size:16px; }
+.wform span { font-size:14px; color:var(--ink-2); }
+.wform .hint { margin:0 0 0 4px; }
 .kpi { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px; min-width:0; }
 .kpi .l { font-size:12px; color:var(--ink-3); }
 .kpi .v { font-size:26px; font-weight:650; letter-spacing:-.02em; margin-top:4px; line-height:1.1; }
@@ -490,6 +494,12 @@ table.wt td.wrap { white-space:normal; min-width:180px; }
   <div class="kpis" id="pg-kpis"></div>
   <div class="card"><h2>What to work on</h2><ul class="ins" id="pg-ins"></ul></div>
   <div class="card coach" id="pg-coach" hidden></div>
+  <div class="card" id="pg-weight"><h2>Body weight <small>each morning, after the loo, before food</small></h2>
+    <div class="wform"><input type="number" id="w-kg" inputmode="decimal" step="0.1" min="30" max="200" aria-label="Weight in kg"><span>kg</span>
+      <button class="btn primary sm" id="w-save" type="button">Save for today</button><span class="hint" id="w-msg"></span></div>
+    <div class="legend"><span><i class="dot" style="background:var(--v-awake)"></i>Weigh-in</span><span><i class="ln" style="background:var(--v-blue)"></i>7-day average</span></div>
+    <div class="chart" id="ch-weight"></div>
+    <p class="hint" id="w-trend"></p></div>
   <div class="card" id="pg-nohealth" hidden><h2>No watch data on this device yet</h2>
     <p class="hint" style="margin-top:0">Steps, sleep and heart charts come from Google Health through your gist. Connect cloud sync in the <a href="#log">Log</a> tab (paste the token, then <em>Restore from cloud</em> on a new device) and tap Refresh.</p></div>
   <div id="pg-health">
@@ -756,8 +766,12 @@ let sessions = null, extras = null;
 const loadJSON = (k, fb) => { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch (e) { return fb; } };
 const S = () => sessions ?? (sessions = loadJSON(SKEY, {}));
 const X = () => extras ?? (extras = loadJSON(XKEY, []));
+/* Morning weigh-ins entered in the app: { 'YYYY-MM-DD': { kg, at } }. Google Health weights (health.json) fill the other days. */
+const WKEY = 'wt-weights';
+let weights = null;
+const Wt = () => weights ?? (weights = loadJSON(WKEY, {}));
 const persist = () => {
-  const ok = ls.set(SKEY, JSON.stringify(S())) & ls.set(XKEY, JSON.stringify(X()));
+  const ok = ls.set(SKEY, JSON.stringify(S())) & ls.set(XKEY, JSON.stringify(X())) & ls.set(WKEY, JSON.stringify(Wt()));
   if (!ok) $('#warn').hidden = false;
   scheduleSync();
 };
@@ -1114,7 +1128,7 @@ const download = (name, text, type) => {
 const payload = () => ({
   exported:new Date().toISOString(),
   program:DAYS.map(d => ({ id:d.id, tag:d.tag, exercises:d.ex.map(e => ({ name:e.n, plan:e.sr, start:e.w, hold:holdOf(e.w === 'BW' ? '1×' : e.w, e.hold), rest:e.rest, progress:e.prog })) })),
-  sessions:Object.values(S()), extras:X(), deleted:T(),
+  sessions:Object.values(S()), extras:X(), deleted:T(), weights:Wt(),
 });
 $('#json').addEventListener('click', () => download(`workout-${isoDate()}.json`, JSON.stringify(payload(), null, 2), 'application/json'));
 $('#csv').addEventListener('click', () => {
@@ -1204,9 +1218,11 @@ function mergeRemote(p) {
   Object.keys(all).forEach(k => { if (tomb[k] && ver(all[k]) <= tomb[k]) delete all[k]; });
   const xs = {}; [...(p.extras || []), ...X()].forEach(x => { if (x.at) xs[x.at] = x; });
   const ex = Object.values(xs).filter(x => !tomb['x:' + x.at]).sort((a, b) => a.at.localeCompare(b.at));
-  const changed = before !== JSON.stringify(all) || ex.length !== X().length;
-  sessions = all; extras = ex; tombs = tomb;
-  ls.set(SKEY, JSON.stringify(sessions)); ls.set(XKEY, JSON.stringify(extras)); ls.set(DKEY, JSON.stringify(tombs));
+  const wts = { ...Wt() }, wBefore = JSON.stringify(Wt());
+  Object.entries(p.weights || {}).forEach(([d, v]) => { if (!wts[d] || (v.at || '') > (wts[d].at || '')) wts[d] = v; });
+  const changed = before !== JSON.stringify(all) || ex.length !== X().length || wBefore !== JSON.stringify(wts);
+  sessions = all; extras = ex; tombs = tomb; weights = wts;
+  ls.set(SKEY, JSON.stringify(sessions)); ls.set(XKEY, JSON.stringify(extras)); ls.set(DKEY, JSON.stringify(tombs)); ls.set(WKEY, JSON.stringify(weights));
   if (changed) renderAll();
   return changed;
 }
@@ -1217,8 +1233,8 @@ async function restoreFromCloud(auto) {
   const r = await gh('/gists/' + g.id);
   const p = JSON.parse(r.files[GFILE].content);
   if (!auto && Object.keys(S()).length && !confirm(`Replace the ${Object.keys(S()).length} session(s) on this device with the ${p.sessions.length} in the cloud (saved ${new Date(p.exported).toLocaleString()})?`)) return false;
-  sessions = Object.fromEntries(p.sessions.map(s => [skey(s.day, s.date), s])); extras = p.extras || []; tombs = p.deleted || {};
-  ls.set(SKEY, JSON.stringify(sessions)); ls.set(XKEY, JSON.stringify(extras)); ls.set(DKEY, JSON.stringify(tombs));
+  sessions = Object.fromEntries(p.sessions.map(s => [skey(s.day, s.date), s])); extras = p.extras || []; tombs = p.deleted || {}; weights = { ...Wt(), ...(p.weights || {}) };
+  ls.set(SKEY, JSON.stringify(sessions)); ls.set(XKEY, JSON.stringify(extras)); ls.set(DKEY, JSON.stringify(tombs)); ls.set(WKEY, JSON.stringify(weights));
   renderAll(); setSync(`Restored ${p.sessions.length} session(s) from your gist.`, 'ok');
   return true;
 }
@@ -1407,7 +1423,7 @@ function lineChart(host, { label, rows, yFmt, tip, h = 170, unit = '' }) {
 
 /* ---- KPI tiles ---- */
 function kpiTile(label, value, unitTxt, delta) {
-  const d = delta ? `<div class="d ${delta.cls || ''}">${delta.cls === 'good' ? '▲' : delta.cls === 'bad' ? '▼' : ''} ${esc(delta.txt)}</div>` : '';
+  const d = delta ? `<div class="d ${delta.cls || ''}">${delta.dir === 'up' ? '▲' : delta.dir === 'down' ? '▼' : ''} ${esc(delta.txt)}</div>` : '';
   return `<div class="kpi"><div class="l">${esc(label)}</div><div class="v">${value}${unitTxt ? `<small>${esc(unitTxt)}</small>` : ''}</div>${d}</div>`;
 }
 /* delta vs the previous 7 days; goodUp says which direction is good */
@@ -1416,8 +1432,72 @@ function delta(now, prev, fmt, goodUp, minMove) {
   const diff = now - prev;
   if (Math.abs(diff) < minMove) return { txt:'flat vs prior 7 days' };
   const good = (diff > 0) === goodUp;
-  return { txt:`${diff > 0 ? '+' : '−'}${fmt(Math.abs(diff))} vs prior 7 days`, cls:good ? 'good' : 'bad' };
+  return { txt:`${diff > 0 ? '+' : '−'}${fmt(Math.abs(diff))} vs prior 7 days`, cls:good ? 'good' : 'bad', dir:diff > 0 ? 'up' : 'down' };
 }
+/* ---- Body weight ---- */
+const weightOn = d => { const a = Wt()[d]; if (a && a.kg != null) return +a.kg; const h = HD()[d]; return h && h.weightKg != null ? +h.weightKg : null; };
+const weightDays = () => [...new Set([...Object.keys(Wt()), ...Object.keys(HD()).filter(d => HD()[d].weightKg != null)])].filter(d => weightOn(d) != null).sort();
+/* trailing 7-day mean of the weigh-ins that exist (daily noise is ±1 kg of water; the average is the real number) */
+const weightAvg = d => avg(Array.from({ length:7 }, (_, i) => weightOn(addDays(d, -i))));
+/* kg per week from a least-squares fit over the last 14 days, once there's enough to mean something */
+function weightRate() {
+  const today = isoDate(), pts = weightDays().filter(d => d > addDays(today, -15)).map(d => [(new Date(d + 'T12:00') - new Date(today + 'T12:00')) / 864e5, weightOn(d)]);
+  if (pts.length < 5 || pts[pts.length - 1][0] - pts[0][0] < 9) return null;
+  const mx = avg(pts.map(p => p[0])), my = avg(pts.map(p => p[1]));
+  const slope = pts.reduce((s, [x, y]) => s + (x - mx) * (y - my), 0) / pts.reduce((s, [x]) => s + (x - mx) ** 2, 0);
+  return slope * 7;
+}
+function weightChart(host, dates) {
+  host.replaceChildren();
+  const rows = dates.map(d => ({ key:d, title:niceDate(d), v:weightOn(d), a:weightAvg(d) }));
+  const vals = rows.flatMap(r => [r.v, r.a]).filter(v => v != null);
+  if (!vals.length) { const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'No weigh-ins in this range yet — enter this morning’s weight above.'; host.appendChild(p); return; }
+  const W = Math.max(240, host.clientWidth), h = 190, L = 40, R = 14, T = 18, B = 20, PH = h - T - B, PW = W - L - R, n = rows.length;
+  const step = (Math.max(...vals) - Math.min(...vals)) > 3 ? 1 : 0.5;
+  const lo = Math.floor((Math.min(...vals) - 0.4) / step) * step, hi = Math.ceil((Math.max(...vals) + 0.4) / step) * step;
+  const xAt = i => n === 1 ? L + PW / 2 : L + i * PW / (n - 1), y = v => T + PH - (v - lo) / (hi - lo) * PH;
+  const svg = svgEl('svg', { viewBox:`0 0 ${W} ${h}`, width:W, height:h, tabindex:0, role:'img', 'aria-label':'Body weight, daily weigh-ins and 7-day average. Use left and right arrow keys to read each day.' }, host);
+  for (let v = lo; v <= hi + 1e-9; v += step) {
+    svgEl('line', { x1:L, x2:W - R, y1:y(v), y2:y(v), stroke:v === lo ? 'var(--v-axis)' : 'var(--v-grid)', 'stroke-width':1, 'shape-rendering':'crispEdges' }, svg);
+    svgText(svg, { x:L - 7, y:y(v) + 3.5, 'text-anchor':'end' }, v.toFixed(step < 1 ? 1 : 0));
+  }
+  let d = '', pen = false;
+  rows.forEach((r, i) => { if (r.a == null) { pen = false; return; } d += `${pen ? 'L' : 'M'}${xAt(i).toFixed(1)},${y(r.a).toFixed(1)}`; pen = true; });
+  rows.forEach((r, i) => { if (r.v != null) svgEl('circle', { cx:xAt(i), cy:y(r.v), r:4, fill:'var(--v-awake)', stroke:'var(--surface)', 'stroke-width':2 }, svg); });
+  if (d) svgEl('path', { d, fill:'none', stroke:'var(--v-blue)', 'stroke-width':2, 'stroke-linejoin':'round', 'stroke-linecap':'round' }, svg);
+  let li = n - 1; while (li >= 0 && rows[li].a == null) li--;
+  if (li >= 0) {
+    svgEl('circle', { cx:xAt(li), cy:y(rows[li].a), r:4, fill:'var(--v-blue)', stroke:'var(--surface)', 'stroke-width':2 }, svg);
+    svgText(svg, { x:xAt(li), y:y(rows[li].a) - 9, 'text-anchor':xAt(li) > W - 40 ? 'end' : 'middle', class:'end' }, rows[li].a.toFixed(1) + ' kg');
+  }
+  const xh = svgEl('line', { class:'xh', y1:T, y2:T + PH, stroke:'var(--ink-3)', 'stroke-width':1, visibility:'hidden' }, svg);
+  xLabels(svg, n, PW, xAt, h - 4, rows.map(r => r.key));
+  wire(svg, W, n, sx => n === 1 ? 0 : Math.round((sx - L) / (PW / (n - 1))), (i, cx, cy) => {
+    xh.setAttribute('x1', xAt(i)); xh.setAttribute('x2', xAt(i)); xh.setAttribute('visibility', 'visible');
+    const r = rows[i];
+    showTip(cx, cy, r.title, [[r.v != null ? r.v.toFixed(1) + ' kg' : 'no weigh-in', 'weigh-in', 'var(--v-awake)'], [r.a != null ? r.a.toFixed(1) + ' kg' : '—', '7-day average', 'var(--v-blue)']]);
+  }, i => [xAt(i), rows[i].a != null ? y(rows[i].a) : T + PH / 2]);
+}
+function renderWeight(dates) {
+  const today = isoDate(), tv = weightOn(today), t = tv != null ? { kg:tv } : null, inp = $('#w-kg');
+  if (document.activeElement !== inp) inp.value = t ? t.kg : '';
+  inp.placeholder = (() => { const ds = weightDays(); return ds.length ? String(weightOn(ds[ds.length - 1])) : '70.0'; })();
+  $('#w-save').textContent = t ? 'Update today' : 'Save for today';
+  $('#w-msg').textContent = t ? `Today: ${(+t.kg).toFixed(1)} kg` : '';
+  weightChart($('#ch-weight'), dates);
+  const rate = weightRate(), n = weightDays().length;
+  $('#w-trend').textContent = rate != null
+    ? `Trend over the last two weeks: ${rate > 0 ? '+' : '−'}${Math.abs(rate).toFixed(2)} kg a week. Aim for −0.25 to −0.75.`
+    : n ? `${n} weigh-in${n === 1 ? '' : 's'} so far — the weekly trend appears after about 10 days of morning weigh-ins.` : '';
+}
+$('#w-save').addEventListener('click', () => {
+  const kg = Math.round(parseFloat($('#w-kg').value) * 10) / 10;
+  if (!(kg >= 30 && kg <= 200)) { $('#w-msg').textContent = 'Enter your weight in kg, e.g. 70.6'; return $('#w-kg').focus(); }
+  Wt()[isoDate()] = { kg, at:new Date().toISOString() };
+  persist(); $('#w-kg').blur(); renderProgress();
+});
+$('#w-kg').addEventListener('keydown', e => { if (e.key === 'Enter') $('#w-save').click(); });
+
 function renderKpis(H) {
   const [ws, we] = weekRange(), daysLeft = Math.round((new Date(we + 'T12:00') - new Date(isoDate() + 'T12:00')) / 864e5) + 1;
   const done = DAYS.filter(d => thisWeekSession(d.id)).length;
@@ -1430,7 +1510,10 @@ function renderKpis(H) {
     kpiTile('Steps, 7-day avg', s == null ? '—' : fmtK(Math.round(s)), '', delta(s, steps(p7), x => fmtK(Math.round(x)), true, 300)) +
     kpiTile('Sleep, 7-night avg', sl == null ? '—' : fmtMin(sl), '', delta(sl, sleepA(q7), x => Math.round(x) + 'm', true, 10)) +
     kpiTile('Resting HR, 7-day', r == null ? '—' : Math.round(r), ' bpm', delta(r, rhr(q7), x => x.toFixed(1), false, 1)) +
-    kpiTile('HRV, 7-day', v == null ? '—' : Math.round(v), ' ms', delta(v, hrv(q7), x => Math.round(x) + '', true, 2));
+    kpiTile('HRV, 7-day', v == null ? '—' : Math.round(v), ' ms', delta(v, hrv(q7), x => Math.round(x) + '', true, 2)) +
+    (() => { const today = isoDate(), wa = weightAvg(today), wp = weightAvg(addDays(today, -7));
+      return kpiTile('Weight, 7-day avg', wa == null ? '—' : wa.toFixed(1), wa == null ? '' : ' kg',
+        wa == null ? { txt:'weigh in each morning' } : wp == null ? { txt:'needs a week of weigh-ins' } : delta(wa, wp, x => x.toFixed(1) + ' kg', false, 0.1)); })();
 }
 
 /* ---- Exercise progression: last three results + what to do next ---- */
@@ -1549,6 +1632,13 @@ function renderInsights(H, ex) {
     else if (r7 != null && rb != null && rb - r7 >= 2) add('good', 'Recovery', `Resting HR <b>${(rb - r7).toFixed(1)} bpm lower</b> than your 3-week baseline — fitness and recovery are improving.`);
     else if (r7 != null) add('good', 'Recovery', `Resting HR ${Math.round(r7)} and HRV ${v7 != null ? Math.round(v7) + ' ms' : '—'} are steady — recovery is fine.`);
   }
+  { const ds = weightDays(), last = ds[ds.length - 1], rate = weightRate();
+    if (!ds.length) add('warn', 'Weight', `No weigh-ins yet. Weigh yourself <b>every morning</b> after the loo — it’s the only way to see whether fat is coming off.`);
+    else if (last < addDays(today, -2)) add('warn', 'Weight', `Last weigh-in was ${niceDate(last)}. Daily weigh-ins make the weekly average trustworthy.`);
+    else if (rate == null) add('up', 'Weight', `${ds.length} weigh-in${ds.length === 1 ? '' : 's'} logged (latest ${weightOn(last).toFixed(1)} kg). Keep going every morning — the trend shows after about 10 days.`);
+    else if (rate > -0.1) add('warn', 'Weight', `Weight is <b>${rate > 0 ? 'up' : 'flat'}</b> (${rate > 0 ? '+' : '−'}${Math.abs(rate).toFixed(2)} kg/week). Fat loss needs a deficit — more walking days and a closer look at food.`);
+    else if (rate < -1) add('warn', 'Weight', `Dropping <b>${Math.abs(rate).toFixed(2)} kg/week</b> — faster than ideal; you’ll lose muscle too. Eat a little more protein and carbs.`);
+    else add('good', 'Weight', `Losing <b>${Math.abs(rate).toFixed(2)} kg a week</b> — right in the −0.25 to −0.75 range.`); }
   const ups = ex.filter(r => r.next[1] === 'up'), struggles = ex.filter(r => r.next[1] === 'warn');
   if (ups.length) add('up', 'Lifting', `Ready to move up: ${ups.map(r => `<b>${esc(r.e.n)}</b> (${esc(r.next[0].replace(/^Move up → /, ''))})`).join(', ')}.`);
   if (struggles.length) add('warn', 'Lifting', `Below plan lately: ${struggles.map(r => `<b>${esc(r.e.n)}</b>`).join(', ')} — ${esc(struggles[0].next[0].toLowerCase())}.`);
@@ -1595,11 +1685,11 @@ function renderWeeks(dates, H) {
 
 function renderDaily(dates, H) {
   const lifts = liftDates();
-  $('#pg-daily').innerHTML = `<thead><tr><th>Day</th><th>Steps</th><th>km</th><th>Asleep</th><th>Deep</th><th>REM</th><th>Light</th><th>Awake</th><th>Rest HR</th><th>HRV</th><th>AZM</th><th>Lifted</th></tr></thead><tbody>` +
+  $('#pg-daily').innerHTML = `<thead><tr><th>Day</th><th>Steps</th><th>km</th><th>Asleep</th><th>Deep</th><th>REM</th><th>Light</th><th>Awake</th><th>Rest HR</th><th>HRV</th><th>AZM</th><th>Weight</th><th>Lifted</th></tr></thead><tbody>` +
     dates.slice().reverse().map(d => {
       const v = H[d] || {}, s = v.sleep || {}, st = s.stagesMin || {}, m = x => x != null ? fmtMin(x) : '—';
       return `<tr><td>${niceDate(d)}</td><td>${v.steps != null ? Number(v.steps).toLocaleString() : '—'}</td><td>${v.distanceKm ?? '—'}</td><td>${m(s.asleepMin)}</td><td>${m(st.deep)}</td><td>${m(st.rem)}</td><td>${m(st.light)}</td><td>${m(st.awake)}</td>` +
-        `<td>${v.restingHr ?? '—'}</td><td>${v.hrv && v.hrv.rmssd != null ? v.hrv.rmssd : '—'}</td><td>${v.azm ?? '—'}</td><td>${lifts[d] ? esc(lifts[d].join(', ')) : ''}</td></tr>`;
+        `<td>${v.restingHr ?? '—'}</td><td>${v.hrv && v.hrv.rmssd != null ? v.hrv.rmssd : '—'}</td><td>${v.azm ?? '—'}</td><td>${weightOn(d) != null ? weightOn(d).toFixed(1) : '—'}</td><td>${lifts[d] ? esc(lifts[d].join(', ')) : ''}</td></tr>`;
     }).join('') + '</tbody>';
 }
 
@@ -1607,7 +1697,7 @@ function renderProgress() {
   hideTip();
   document.querySelectorAll('#pg-range button[data-r]').forEach(b => b.classList.toggle('on', b.dataset.r === pgRange));
   const H = HD(), has = Object.keys(H).length > 0, dates = pgDates(), lifts = liftDates(), ex = exRows();
-  const empty = !Object.keys(S()).length && !has;
+  const empty = !Object.keys(S()).length && !has && !weightDays().length;
   const blocks = [...document.querySelectorAll('#p-progress > *')].filter(el => !el.matches('.panel-head, #pg-range, #pg-empty'));
   $('#pg-empty').hidden = !empty; blocks.forEach(b => b.hidden = empty);
   if (empty) {
@@ -1617,7 +1707,7 @@ function renderProgress() {
     return;
   }
   $('#pg-nohealth').hidden = has; $('#pg-health').hidden = !has;
-  renderKpis(H); renderInsights(H, ex); renderCoach(); renderWeeks(dates, H); renderExTable(ex); renderDaily(dates, H);
+  renderKpis(H); renderInsights(H, ex); renderCoach(); renderWeight(dates); renderWeeks(dates, H); renderExTable(ex); renderDaily(dates, H);
   if (!has) return;
   const title = d => niceDate(d) + (lifts[d] ? ' · ' + lifts[d].join(', ') : '');
   barChart($('#ch-steps'), {
