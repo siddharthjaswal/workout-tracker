@@ -398,6 +398,7 @@ table.wt td.wrap { white-space:normal; min-width:180px; }
     <span class="chip">4 sessions / week</span>
     <span class="chip">5 &middot; 7.5 &middot; 10 kg pairs</span>
     <span class="chip">Bench &minus;15&deg; to 80&deg;</span>
+    <span class="chip">Long band</span>
     <span class="chip">Home &middot; no gym</span>
   </div>
 </header>
@@ -598,6 +599,7 @@ const V = {
   rearDelt:['buuYPLVXsJg','Colossus Fitness'], hammer:['G7hy-AxQwcQ','Colossus Fitness'], skull:['8ncEJDm7Cig','Lean Physique Lab'],
   slRdl:['Zfr6wizR8rs','Squat University'], revLunge:['u_zSfK5ZFU4','BuiltLean'], stepUp:['DxUNi119Qzs','PureGym'],
   slHip:['jIO6wGeBLHE','Musician Fitness Trainer'], thruster:['tJP-fwf5ASA','J2FIT'], sidePlank:['44ND4bOB-T0','NASM'],
+  bandPulldown:['gebMl23Fw_4','Rehab My Patient'], bandFacePull:['Q77ORURfeYc','Caroline Juster'],
 };
 /* Warm-ups are dynamic (moving), cool-downs are static holds — never the other way round. */
 const WU_UPPER = [
@@ -605,7 +607,7 @@ const WU_UPPER = [
   '<b>Arm circles</b> 10 forward, 10 back, small to big.',
   '<b>Shoulder rolls</b> 10 back, then <b>cat-cow</b> 8 slow reps on all fours.',
   '<b>Scapular push-ups</b> 10 — plank position, only the shoulder blades move.',
-  '<b>Wall slides</b> 10 — back and arms on the wall, slide up and down.',
+  '<b>Band pull-aparts</b> 15 — arms straight at chest height, pull the band to your chest. Hold it wider if it’s too stiff. Then <b>band pass-throughs</b> 8 — wide grip, arms straight, over the head and back.',
   '<b>Feeder set</b>: exercise 1 with 2×5, 10 easy reps. Then start.',
 ];
 const WU_LOWER = [
@@ -634,13 +636,16 @@ const CD_LOWER = [
 ];
 
 const DAYS = [
-  { id:'upper-a', tag:'Upper A', title:'Chest, back, arms', time:'~50 min', warm:WU_UPPER, cool:CD_UPPER, ex:[
+  { id:'upper-a', tag:'Upper A', title:'Chest, back, arms', time:'~55 min', warm:WU_UPPER, cool:CD_UPPER, ex:[
     { n:'Flat dumbbell press', m:'Chest · triceps · front delts', sr:'4 × 8-15', w:'2×10', rest:'75s', v:V.flatPress,
       prog:'8 → 15 reps, then: 3s lowering → 2s pause on the chest → 1.5 reps → 5 sets.',
       cue:'Bench at 0°. Lower to the chest line with elbows ~45° from the torso, forearms vertical, press up and slightly in.' },
     { n:'Single-arm row', m:'Back · biceps', sr:'4 × 10-15 / arm', w:'1×10', hold:'one dumbbell, per arm', rest:'75s', v:V.row1,
       prog:'2s squeeze at the top → 3s lowering → 5 sets.',
       cue:'Hand and knee on the flat bench, back flat. Pull the elbow past your torso, no twisting. Rest after both arms, not between them.' },
+    { n:'Band lat pulldown', m:'Lats · upper back — the vertical pull the program was missing', sr:'3 × 12-20', w:'BAND', hold:'anchored high', rest:'45s', v:V.bandPulldown,
+      prog:'Kneel further back for more tension → 2s squeeze at the bottom → single-arm, 3 × 12 per arm.',
+      cue:'Band anchored high (door anchor over the top of a closed door, or a sturdy bar overhead). Kneel tall facing it, arms up. Pull your elbows down to your ribs, chest up, squeeze the shoulder blades down. No anchor yet? Do overhead pull-aparts: band overhead, arms straight, pull it apart and down behind your head to the upper back.' },
     { n:'Push-ups', m:'Chest · triceps · core', sr:'3 × max minus 2', w:'BW', rest:'90s', v:V.pushup,
       prog:'3 × 20 clean → feet on the flat bench (decline) → 3s lowering.',
       cue:'Chest is already tired from the press — 10 here is normal, 3 sets even if the third is short. Hands under shoulders, elbows ~45°, body one line, chest to a fist from the floor.' },
@@ -665,7 +670,7 @@ const DAYS = [
       prog:'3s lowering → 2s pause at the stretch → single-leg version (Lower B).',
       cue:'Hinge at the hips with a flat back and soft knees, dumbbells slide down the thighs, stop when the hamstrings pull.' },
     { n:'Hip thrust', m:'Glutes', sr:'3 × 12-20', w:'2×10', hold:'one on each hip', rest:'60s', v:V.hipThrust,
-      prog:'2s squeeze at the top → single-leg with 1×10.',
+      prog:'2s squeeze at the top → add the band over the hips (ends hooked under the bench legs) → single-leg with 1×10.',
       cue:'Upper back on the flat bench, dumbbells on the hips, chin tucked, drive the heels, finish with ribs down and glutes squeezed.' },
     { n:'Calf raise', m:'Calves', sr:'3 × 15-20', w:'2×10', rest:'45s', v:V.calf,
       prog:'Single-leg with 1×10 → 2s pause at the top.',
@@ -690,9 +695,9 @@ const DAYS = [
     { n:'Lateral raise', m:'Side delts', sr:'4 × 12-20', w:'2×5', rest:'45s', v:V.lateral,
       prog:'→ 2×7.5 strict → 2×10 partials.',
       cue:'Lead with the elbows, stop at shoulder height, no shrug.' },
-    { n:'Rear delt fly', m:'Rear delts · upper back', sr:'3 × 8-15', w:'2×5', rest:'45s', v:V.rearDelt,
-      prog:'8 strict → build to 15 → 2×7.5.',
-      cue:'Face down on the 30° bench. Arms out to the sides with a soft elbow, pinkies up, squeeze the shoulder blades. 5 kg is the right weight here — fewer strict reps beat swinging.' },
+    { n:'Band face pull', m:'Rear delts · upper back · shoulder health — replaces the rear delt fly', sr:'3 × 15-20', w:'BAND', hold:'anchored at face height', rest:'45s', v:V.bandFacePull,
+      prog:'Step further back for more tension → 2s hold at the face → 4 sets.',
+      cue:'Band anchored at face height (door anchor in the hinge side of a door that opens away from you, or a sturdy pole). Pull towards your forehead with elbows high and wide, finish with fists beside your ears, squeeze the shoulder blades. Slow on the way back.' },
     { n:'Hammer curl', m:'Biceps · forearms', sr:'3 × 10-15', w:'2×7.5', rest:'45s', v:V.hammer,
       prog:'→ 2×10 → 3s lowering.',
       cue:'Palms facing each other, elbows still, no swing.' },
@@ -746,8 +751,8 @@ const hhmm = iso => { const d = new Date(iso); return `${pad(d.getHours())}:${pa
 const niceDate = iso => new Date(iso + 'T12:00').toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
 /* Where the dumbbell goes: the exercise's `hold` wins, else "each hand" for a pair, "one dumbbell" for a single. */
 const holdOf = (w, hold) => hold || (w.startsWith('2×') ? 'each hand' : 'one dumbbell');
-const weight = (w, hold) => w === 'BW' ? 'Bodyweight' : `${w.slice(2)} kg <small>${esc(holdOf(w, hold))}</small>`;
-const weightShort = (w, hold) => w === 'BW' ? 'bodyweight' : `${w.slice(2)} kg ${holdOf(w, hold)}`;
+const weight = (w, hold) => w === 'BW' ? 'Bodyweight' : w === 'BAND' ? `Band <small>${esc(hold || '')}</small>` : `${w.slice(2)} kg <small>${esc(holdOf(w, hold))}</small>`;
+const weightShort = (w, hold) => w === 'BW' ? 'bodyweight' : w === 'BAND' ? 'band' : `${w.slice(2)} kg ${holdOf(w, hold)}`;
 /* '4 × 8-15 / leg' → {sets:4, lo:8, hi:15}; '3 × max minus 2' → {sets:3} */
 const parseSR = sr => { const m = sr.match(/^(\d+)\s*×\s*(\d+)(?:-(\d+))?/); return m ? { sets:+m[1], lo:+m[2], hi:m[3] ? +m[3] : +m[2] } : { sets:+sr[0] || 3 }; };
 const ytHTML = ([id, by]) =>
@@ -920,14 +925,14 @@ function renderLog(dayId, i) {
 }
 function editorHTML(e, r) {
   const plan = parseSR(e.sr);
-  const mode = e.w === 'BW' ? 'BW' : e.w.slice(0, 2);
+  const mode = e.w === 'BW' || e.w === 'BAND' ? e.w : e.w.slice(0, 2);
   const cur = r ? r.w : e.w;
-  const chips = (mode === 'BW' ? ['BW', '1×5', '1×7.5', '1×10'] : [mode + '5', mode + '7.5', mode + '10'])
-    .map(w => `<button type="button" class="wchip${w === cur ? ' on' : ''}" data-w="${w}">${w === 'BW' ? 'Bodyweight' : w.slice(2) + ' kg'}</button>`).join('');
+  const chips = (mode === 'BAND' ? ['BAND'] : mode === 'BW' ? ['BW', '1×5', '1×7.5', '1×10'] : [mode + '5', mode + '7.5', mode + '10'])
+    .map(w => `<button type="button" class="wchip${w === cur ? ' on' : ''}" data-w="${w}">${w === 'BW' ? 'Bodyweight' : w === 'BAND' ? 'Band' : w.slice(2) + ' kg'}</button>`).join('');
   const sets = r ? r.sets : plan.sets, reps = r && r.reps != null ? r.reps : '';
   const ph = plan.lo != null ? (plan.lo === plan.hi ? plan.lo : `${plan.lo}-${plan.hi}`) : 'max';
   return `<div class="ed">
-    <div class="ed-row"><span class="ed-l">Weight</span>${chips}<span class="sub">${esc(mode === 'BW' ? (e.hold ? 'dumbbell ' + e.hold : '') : holdOf(e.w, e.hold))}</span></div>
+    <div class="ed-row"><span class="ed-l">Weight</span>${chips}<span class="sub">${esc(mode === 'BAND' ? 'further from the anchor = harder' : mode === 'BW' ? (e.hold ? 'dumbbell ' + e.hold : '') : holdOf(e.w, e.hold))}</span></div>
     <div class="ed-row"><span class="ed-l">Sets</span><button type="button" class="step" data-d="-1">−</button><b class="n">${sets}</b><button type="button" class="step" data-d="1">+</button><span class="sub">planned ${plan.sets}</span></div>
     <div class="ed-row"><span class="ed-l">Reps</span><input type="number" inputmode="numeric" min="0" class="reps" value="${reps}" placeholder="${ph}"><span class="sub">lowest set · blank = in range</span></div>
     <div class="ed-row"><span class="ed-l">Note</span><input type="text" class="note" value="${esc(r ? r.note : '')}" placeholder="Optional — felt fatigued, lower back tight…"></div>
@@ -1127,7 +1132,7 @@ const download = (name, text, type) => {
 };
 const payload = () => ({
   exported:new Date().toISOString(),
-  program:DAYS.map(d => ({ id:d.id, tag:d.tag, exercises:d.ex.map(e => ({ name:e.n, plan:e.sr, start:e.w, hold:holdOf(e.w === 'BW' ? '1×' : e.w, e.hold), rest:e.rest, progress:e.prog })) })),
+  program:DAYS.map(d => ({ id:d.id, tag:d.tag, exercises:d.ex.map(e => ({ name:e.n, plan:e.sr, start:e.w, hold:e.w === 'BAND' ? (e.hold || 'band') : holdOf(e.w === 'BW' ? '1×' : e.w, e.hold), rest:e.rest, progress:e.prog })) })),
   sessions:Object.values(S()), extras:X(), deleted:T(), weights:Wt(),
 });
 $('#json').addEventListener('click', () => download(`workout-${isoDate()}.json`, JSON.stringify(payload(), null, 2), 'application/json'));
@@ -1270,7 +1275,7 @@ const addDays = (d, n) => { const t = new Date(d + 'T12:00'); t.setDate(t.getDat
 const satOf = d => { const t = new Date(d + 'T12:00'); t.setDate(t.getDate() - (t.getDay() + 1) % 7); return isoDate(t); };
 const dShort = d => new Date(d + 'T12:00').toLocaleDateString('en-GB', { day:'numeric', month:'short' });
 const avg = a => { const v = a.filter(x => x != null && !isNaN(x)); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
-const wNum = w => w === 'BW' ? 0 : parseFloat(w.slice(2));
+const wNum = w => w === 'BW' || w === 'BAND' ? 0 : parseFloat(w.slice(2));
 const mdBold = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
 const HD = () => (health() || {}).days || {};
 /* date → session tags that had at least one exercise done or modified */
@@ -1525,7 +1530,7 @@ function exNext(e, entries) {
   if (entries.slice(0, 3).filter(below).length >= 2) return ['Stay one step down until it feels solid', 'warn'];
   if (plan.hi && last.reps != null && last.reps >= plan.hi && last.sets >= plan.sets) {
     const w = wNum(last.w), nx = ladder[ladder.indexOf(String(w)) + 1];
-    return [last.w !== 'BW' && nx ? `Move up → ${nx} kg` : 'Move up → next step on its Progress line', 'up'];
+    return [last.w !== 'BW' && last.w !== 'BAND' && nx ? `Move up → ${nx} kg` : 'Move up → next step on its Progress line', 'up'];
   }
   const prevTop = entries[1] && plan.hi && entries[1].reps != null && entries[1].reps >= plan.hi;
   if (last.s === 'mod' && wNum(last.w) > wNum(e.w) && !prevTop) return [`Back to ${weightShort(e.w, e.hold)} — move up by reps first`, 'warn'];
