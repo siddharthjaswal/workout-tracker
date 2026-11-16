@@ -18,7 +18,10 @@ REDIRECT = f'http://127.0.0.1:{PORT}/'
 
 args = [a for a in sys.argv[1:] if not a.startswith('--')]
 if not args: sys.exit(__doc__)
-raw = json.load(open(args[0]))
+# a glob like client_secret_*.json can match an old Web client too — prefer the Desktop ("installed") one
+files = [(a, json.load(open(a))) for a in args]
+path, raw = next(((a, r) for a, r in files if 'installed' in r), files[0])
+if len(files) > 1: print(f'Using {path.split("/")[-1][:40]}… ({"Desktop" if "installed" in raw else "Web"} client)\n')
 cfg = raw.get('installed') or raw.get('web') or raw
 cid, csec = cfg['client_id'], cfg['client_secret']
 if 'web' in raw and REDIRECT not in (cfg.get('redirect_uris') or []):
