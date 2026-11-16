@@ -9,13 +9,16 @@ Needs an OAuth client of type "Desktop app" from the Google Cloud console.
 """
 import http.server, json, secrets, subprocess, sys, urllib.parse, urllib.request, webbrowser
 
+# --no-nutrition: leave out food/water access (only needed if Google rejects that scope)
 SCOPES = ' '.join('https://www.googleapis.com/auth/googlehealth.' + s for s in
-                  ('activity_and_fitness.readonly', 'sleep.readonly', 'health_metrics_and_measurements.readonly'))
+                  ('activity_and_fitness.readonly', 'sleep.readonly', 'health_metrics_and_measurements.readonly')
+                  + (() if '--no-nutrition' in sys.argv else ('nutrition.readonly',)))
 PORT = 8765
 REDIRECT = f'http://127.0.0.1:{PORT}/'
 
-if len(sys.argv) < 2: sys.exit(__doc__)
-raw = json.load(open(sys.argv[1]))
+args = [a for a in sys.argv[1:] if not a.startswith('--')]
+if not args: sys.exit(__doc__)
+raw = json.load(open(args[0]))
 cfg = raw.get('installed') or raw.get('web') or raw
 cid, csec = cfg['client_id'], cfg['client_secret']
 if 'web' in raw and REDIRECT not in (cfg.get('redirect_uris') or []):

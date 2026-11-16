@@ -316,6 +316,10 @@ footer { margin-top:34px; padding-top:18px; border-top:1px solid var(--line); fo
 .filters button.on { border-color:var(--ink-2); color:var(--ink); background:var(--surface-2); }
 .filters .refresh { margin-left:auto; }
 .kpis { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:16px; }
+.kpis.k3 { grid-template-columns:repeat(3,1fr); margin-bottom:12px; }
+.kpis.k3 .kpi { background:var(--surface-2); }
+.fnudge { font-size:14.5px; color:var(--ink-2); margin:0; }
+.fnudge .hint { margin:0; }
 .wform { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:-2px 0 14px; }
 .wform input { width:92px; font-size:16px; }
 .wform span { font-size:14px; color:var(--ink-2); }
@@ -369,7 +373,7 @@ table.wt td.wrap { white-space:normal; min-width:180px; }
 .nx.k-up { color:var(--v-good); } .nx.k-warn { color:var(--v-warn); }
 .sec-h { font-size:12px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); margin:22px 0 10px; }
 @media (max-width:820px) { .kpis { grid-template-columns:repeat(3,1fr); } }
-@media (max-width:640px) { .kpis { grid-template-columns:1fr 1fr; } .duo { grid-template-columns:1fr; } .duo .card { margin-bottom:16px; } }
+@media (max-width:640px) { .kpis { grid-template-columns:1fr 1fr; } .kpis.k3 { grid-template-columns:repeat(3,1fr); gap:8px; } .kpis.k3 .kpi { padding:10px; } .kpis.k3 .v { font-size:20px; white-space:nowrap; } .kpis.k3 .v small { font-size:12px; } .duo { grid-template-columns:1fr; } .duo .card { margin-bottom:16px; } }
 
 @media (max-width:640px) {
   header.top { padding:24px 0 16px; }
@@ -495,7 +499,7 @@ table.wt td.wrap { white-space:normal; min-width:180px; }
   <div class="kpis" id="pg-kpis"></div>
   <div class="card"><h2>What to work on</h2><ul class="ins" id="pg-ins"></ul></div>
   <div class="card coach" id="pg-coach" hidden></div>
-  <div class="card" id="pg-weight"><h2>Body weight <small>each morning, after the loo, before food</small></h2>
+  <div class="card" id="pg-weight"><h2>Body weight <small>log it in Google Health each morning, after the loo, before food &mdash; or here</small></h2>
     <div class="wform"><input type="number" id="w-kg" inputmode="decimal" step="0.1" min="30" max="200" aria-label="Weight in kg"><span>kg</span>
       <button class="btn primary sm" id="w-save" type="button">Save for today</button><span class="hint" id="w-msg"></span></div>
     <div class="legend"><span><i class="dot" style="background:var(--v-awake)"></i>Weigh-in</span><span><i class="ln" style="background:var(--v-blue)"></i>7-day average</span></div>
@@ -504,6 +508,17 @@ table.wt td.wrap { white-space:normal; min-width:180px; }
   <div class="card" id="pg-nohealth" hidden><h2>No watch data on this device yet</h2>
     <p class="hint" style="margin-top:0">Steps, sleep and heart charts come from Google Health through your gist. Connect cloud sync in the <a href="#log">Log</a> tab (paste the token, then <em>Restore from cloud</em> on a new device) and tap Refresh.</p></div>
   <div id="pg-health">
+    <div class="card" id="pg-food"><h2>Food today <small>log meals and water in Google Health &middot; updates here a few times a day</small></h2>
+      <div class="kpis k3" id="f-now"></div>
+      <p class="fnudge" id="f-nudge"></p></div>
+    <div class="duo" id="pg-food-charts">
+      <div class="card"><h2>Calories eaten <small>kcal a day</small></h2>
+        <div class="legend"><span><i style="background:var(--v-blue)"></i>Eaten</span><span><i class="dot" style="background:var(--v-orange)"></i>Lifting session</span><span><i class="ln" style="background:var(--ink-3)"></i>Goal</span></div>
+        <div class="chart" id="ch-kcal"></div></div>
+      <div class="card"><h2>Protein <small>grams a day</small></h2>
+        <div class="legend"><span><i style="background:var(--v-blue)"></i>Eaten</span><span><i class="ln" style="background:var(--ink-3)"></i>Goal</span></div>
+        <div class="chart" id="ch-protein"></div></div>
+    </div>
     <div class="card"><h2>Steps per day</h2>
       <div class="legend"><span><i style="background:var(--v-blue)"></i>Steps</span><span><i class="dot" style="background:var(--v-orange)"></i>Lifting session</span><span><i class="ln" style="background:var(--ink-3)"></i>10k walk-day target</span></div>
       <div class="chart" id="ch-steps"></div></div>
@@ -1271,6 +1286,8 @@ showSyncInfo();
 
 /* ---------- Progress: KPIs, what to work on, coach notes, charts, weekly + exercise tables ---------- */
 const STEP_DAY = 10000, STEP_WEEK = 55000, SLEEP_MIN = 420, ZERO_STEPS = 5000;
+/* starting food targets: ~300-400 kcal under the watch's ~2,070 kcal/day burn; recalibrated in the weekly review from the weight trend */
+const FOOD = { kcal:1750, protein:120, waterMl:2500 };
 const addDays = (d, n) => { const t = new Date(d + 'T12:00'); t.setDate(t.getDate() + n); return isoDate(t); };
 const satOf = d => { const t = new Date(d + 'T12:00'); t.setDate(t.getDate() - (t.getDay() + 1) % 7); return isoDate(t); };
 const dShort = d => new Date(d + 'T12:00').toLocaleDateString('en-GB', { day:'numeric', month:'short' });
@@ -1456,7 +1473,7 @@ function weightChart(host, dates) {
   host.replaceChildren();
   const rows = dates.map(d => ({ key:d, title:niceDate(d), v:weightOn(d), a:weightAvg(d) }));
   const vals = rows.flatMap(r => [r.v, r.a]).filter(v => v != null);
-  if (!vals.length) { const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'No weigh-ins in this range yet — enter this morning’s weight above.'; host.appendChild(p); return; }
+  if (!vals.length) { const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'No weigh-ins in this range yet — log this morning’s weight in Google Health or above.'; host.appendChild(p); return; }
   const W = Math.max(240, host.clientWidth), h = 190, L = 40, R = 14, T = 18, B = 20, PH = h - T - B, PW = W - L - R, n = rows.length;
   const step = (Math.max(...vals) - Math.min(...vals)) > 3 ? 1 : 0.5;
   const lo = Math.floor((Math.min(...vals) - 0.4) / step) * step, hi = Math.ceil((Math.max(...vals) + 0.4) / step) * step;
@@ -1502,6 +1519,36 @@ $('#w-save').addEventListener('click', () => {
   persist(); $('#w-kg').blur(); renderProgress();
 });
 $('#w-kg').addEventListener('keydown', e => { if (e.key === 'Enter') $('#w-save').click(); });
+
+/* ---- Food & water: logged in Google Health, pulled into health.json days[d].food {kcal, protein, carbs, fat, fiber}, .waterMl, .meals[] ---- */
+const foodOn = d => { const f = HD()[d] && HD()[d].food; return f && f.kcal ? f : null; };
+const kc = n => Math.round(n).toLocaleString('en-GB');
+function renderFood(dates, H) {
+  const today = isoDate(), f = foodOn(today) || {}, w = H[today] && H[today].waterMl, upd = (health() || {}).updated;
+  const left = f.kcal != null ? FOOD.kcal - f.kcal : null, pGap = Math.max(0, FOOD.protein - (f.protein || 0));
+  const asOf = upd ? `Updated ${new Date(upd).toLocaleString('en-GB', { weekday:'short', hour:'2-digit', minute:'2-digit' })}` : '';
+  $('#f-now').innerHTML =
+    kpiTile('Calories', f.kcal != null ? kc(f.kcal) : '—', ' kcal', left == null ? { txt:`goal ${kc(FOOD.kcal)}` } : left >= 0 ? { txt:`${kc(left)} left` } : { txt:`${kc(-left)} over`, cls:'bad' }) +
+    kpiTile('Protein', f.protein != null ? f.protein : '—', ' g', f.protein == null ? { txt:`goal ${FOOD.protein} g` } : pGap > 0 ? { txt:`${pGap} g to go` } : { txt:'goal hit', cls:'good' }) +
+    kpiTile('Water', w != null ? (w / 1000).toFixed(1) : '—', ' L', w == null ? { txt:`goal ${FOOD.waterMl / 1000} L` } : w >= FOOD.waterMl ? { txt:'goal hit', cls:'good' } : { txt:`${((FOOD.waterMl - w) / 1000).toFixed(1)} L to go` });
+  let msg;
+  if (f.kcal == null) msg = 'Nothing logged for today yet. Log meals in Google Health as you eat them.';
+  else if (left <= 0) msg = `<b>You’re at today’s goal — stop eating for the day.</b> Still hungry? Buttermilk, cucumber or a clear soup.${pGap > 0 ? ` (Protein was ${pGap} g short — start tomorrow with it.)` : ''}`;
+  else if (pGap > 20 && left < pGap * 8) msg = `<b>${pGap} g protein to go with ${kc(left)} kcal left</b> — only protein-dense food fits: whey (1 scoop ≈ 120 kcal, 24 g), soya chunks (30 g dry ≈ 105 kcal, 16 g), Greek yogurt (150 g ≈ 100 kcal, 15 g).`;
+  else if (pGap > 0) msg = `${kc(left)} kcal and ${pGap} g protein left — build the next meal around protein.`;
+  else msg = `${kc(left)} kcal left and protein is covered.`;
+  $('#f-nudge').innerHTML = msg + (asOf ? ` <span class="hint">${esc(asOf)}</span>` : '');
+  const any = dates.some(d => foodOn(d));
+  $('#pg-food-charts').hidden = !any;
+  if (!any) return;
+  const lifts = liftDates(), title = d => niceDate(d) + (lifts[d] ? ' · ' + lifts[d].join(', ') : '');
+  const tip = r => { const x = foodOn(r.key), wv = H[r.key] && H[r.key].waterMl; if (!x) return [['nothing logged', '', '']];
+    return [[kc(x.kcal) + ' kcal', 'eaten', 'var(--v-blue)'], [(x.protein ?? '—') + ' g', 'protein', ''], [(x.carbs ?? '—') + ' g', 'carbs', ''], [(x.fat ?? '—') + ' g', 'fat', ''], ...(wv ? [[(wv / 1000).toFixed(1) + ' L', 'water', '']] : [])]; };
+  barChart($('#ch-kcal'), { label:'Calories eaten per day', rows:dates.map(d => ({ key:d, title:title(d), vals:[foodOn(d) ? foodOn(d).kcal : null] })),
+    series:[{ name:'Calories', color:'var(--v-blue)' }], target:FOOD.kcal, targetLabel:'goal', yStep:500, yFmt:v => v ? fmtK(v) : '0', mark:r => !!lifts[r.key], tip });
+  barChart($('#ch-protein'), { label:'Protein eaten per day', rows:dates.map(d => ({ key:d, title:title(d), vals:[foodOn(d) ? foodOn(d).protein : null] })),
+    series:[{ name:'Protein', color:'var(--v-blue)' }], target:FOOD.protein, targetLabel:'goal', yStep:40, yFmt:v => String(v), tip });
+}
 
 function renderKpis(H) {
   const [ws, we] = weekRange(), daysLeft = Math.round((new Date(we + 'T12:00') - new Date(isoDate() + 'T12:00')) / 864e5) + 1;
@@ -1636,6 +1683,15 @@ function renderInsights(H, ex) {
     else if (v7 != null && vb != null && v7 < vb * 0.88) add('warn', 'Recovery', `HRV is <b>${Math.round((1 - v7 / vb) * 100)}% below</b> your baseline — take it easier for a day or two.`);
     else if (r7 != null && rb != null && rb - r7 >= 2) add('good', 'Recovery', `Resting HR <b>${(rb - r7).toFixed(1)} bpm lower</b> than your 3-week baseline — fitness and recovery are improving.`);
     else if (r7 != null) add('good', 'Recovery', `Resting HR ${Math.round(r7)} and HRV ${v7 != null ? Math.round(v7) + ' ms' : '—'} are steady — recovery is fine.`);
+    const fd = lastN(7, 1).filter(d => foodOn(d)), ka = avg(fd.map(d => foodOn(d).kcal)), pa = avg(fd.map(d => foodOn(d).protein)), rate = weightRate();
+    if (!Object.keys(H).some(d => foodOn(d))) add('up', 'Food', `Log meals and water in <b>Google Health</b> — calories and protein show up here and in the weekly review.`);
+    else if (fd.length < 5) add('warn', 'Food', `Food logged on <b>${fd.length} of the last 7 days</b>. Unlogged days hide where the calories come from — log everything, snacks and drinks too.`);
+    else {
+      if (ka > FOOD.kcal + 150) add('warn', 'Food', `Averaging <b>${kc(ka)} kcal</b> a day — ${kc(ka - FOOD.kcal)} over the ${kc(FOOD.kcal)} goal.`);
+      else if (rate != null && rate > -0.1) add('warn', 'Food', `Logged food is on goal (${kc(ka)} kcal a day) but weight isn’t dropping — something isn’t being logged (cooking oil, ghee, snacks, drinks) or the goal needs to come down.`);
+      else add('good', 'Food', `Averaging <b>${kc(ka)} kcal</b> a day — on goal.`);
+      if (pa != null && pa < FOOD.protein * 0.85) add('warn', 'Protein', `Protein averages <b>${Math.round(pa)} g</b> a day — short of ${FOOD.protein} g. Put whey, soya chunks, paneer or Greek yogurt in two meals.`);
+    }
   }
   { const ds = weightDays(), last = ds[ds.length - 1], rate = weightRate();
     if (!ds.length) add('warn', 'Weight', `No weigh-ins yet. Weigh yourself <b>every morning</b> after the loo — it’s the only way to see whether fat is coming off.`);
@@ -1679,22 +1735,23 @@ function renderWeeks(dates, H) {
     const okPct = exs.length ? Math.round(exs.filter(r => r.s === 'done' || r.s === 'mod').length / exs.length * 100) + '%' : '—';
     const sl = avg(ds.map(d => H[d] && H[d].sleep && H[d].sleep.asleepMin)), r = avg(ds.map(d => H[d] && H[d].restingHr)), v = avg(ds.map(d => H[d] && H[d].hrv && H[d].hrv.rmssd));
     const pct = Math.min(100, Math.round(st / STEP_WEEK * 100));
+    const fds = ds.filter(d => d < isoDate() && foodOn(d)), fk = avg(fds.map(d => foodOn(d).kcal)), fp = avg(fds.map(d => foodOn(d).protein));
     return `<tr><td>${dShort(ws)} – ${dShort(we)}${ws === cur ? ' <span class="area" style="display:inline;font-weight:400">· so far</span>' : ''}</td>` +
       `<td><span class="pips" aria-hidden="true">${DAYS.map(d => `<i class="${types.has(d.id) ? 'f' : ''}"></i>`).join('')}</span>${types.size}/4</td>` +
       `<td>${stepsArr.length ? `<span class="meter" aria-hidden="true"><i style="width:${pct}%"></i></span>${fmtK(st)}` : '—'}</td>` +
       `<td>${stepsArr.length ? fmtK(Math.round(st / stepsArr.length)) : '—'}</td><td>${sl != null ? fmtMin(sl) : '—'}</td>` +
-      `<td>${r != null ? r.toFixed(1) : '—'}</td><td>${v != null ? Math.round(v) : '—'}</td><td>${stepsArr.length ? zero : '—'}</td><td>${okPct}</td></tr>`;
+      `<td>${r != null ? r.toFixed(1) : '—'}</td><td>${v != null ? Math.round(v) : '—'}</td><td>${fk != null ? kc(fk) + (fp != null ? ' · ' + Math.round(fp) + ' g' : '') : '—'}</td><td>${stepsArr.length ? zero : '—'}</td><td>${okPct}</td></tr>`;
   });
-  $('#pg-weeks').innerHTML = `<thead><tr><th>Week</th><th>Sessions</th><th>Steps</th><th>Per day</th><th>Sleep</th><th>Rest HR</th><th>HRV</th><th>Zero days</th><th>Exercises done</th></tr></thead><tbody>${rows.join('')}</tbody>`;
+  $('#pg-weeks').innerHTML = `<thead><tr><th>Week</th><th>Sessions</th><th>Steps</th><th>Per day</th><th>Sleep</th><th>Rest HR</th><th>HRV</th><th>Food/day</th><th>Zero days</th><th>Exercises done</th></tr></thead><tbody>${rows.join('')}</tbody>`;
 }
 
 function renderDaily(dates, H) {
   const lifts = liftDates();
-  $('#pg-daily').innerHTML = `<thead><tr><th>Day</th><th>Steps</th><th>km</th><th>Asleep</th><th>Deep</th><th>REM</th><th>Light</th><th>Awake</th><th>Rest HR</th><th>HRV</th><th>AZM</th><th>Weight</th><th>Lifted</th></tr></thead><tbody>` +
+  $('#pg-daily').innerHTML = `<thead><tr><th>Day</th><th>Steps</th><th>km</th><th>Asleep</th><th>Deep</th><th>REM</th><th>Light</th><th>Awake</th><th>Rest HR</th><th>HRV</th><th>AZM</th><th>Kcal in</th><th>Protein</th><th>Water</th><th>Weight</th><th>Lifted</th></tr></thead><tbody>` +
     dates.slice().reverse().map(d => {
       const v = H[d] || {}, s = v.sleep || {}, st = s.stagesMin || {}, m = x => x != null ? fmtMin(x) : '—';
       return `<tr><td>${niceDate(d)}</td><td>${v.steps != null ? Number(v.steps).toLocaleString() : '—'}</td><td>${v.distanceKm ?? '—'}</td><td>${m(s.asleepMin)}</td><td>${m(st.deep)}</td><td>${m(st.rem)}</td><td>${m(st.light)}</td><td>${m(st.awake)}</td>` +
-        `<td>${v.restingHr ?? '—'}</td><td>${v.hrv && v.hrv.rmssd != null ? v.hrv.rmssd : '—'}</td><td>${v.azm ?? '—'}</td><td>${weightOn(d) != null ? weightOn(d).toFixed(1) : '—'}</td><td>${lifts[d] ? esc(lifts[d].join(', ')) : ''}</td></tr>`;
+        `<td>${v.restingHr ?? '—'}</td><td>${v.hrv && v.hrv.rmssd != null ? v.hrv.rmssd : '—'}</td><td>${v.azm ?? '—'}</td><td>${foodOn(d) ? kc(foodOn(d).kcal) : '—'}</td><td>${foodOn(d) && foodOn(d).protein != null ? foodOn(d).protein + ' g' : '—'}</td><td>${v.waterMl ? (v.waterMl / 1000).toFixed(1) + ' L' : '—'}</td><td>${weightOn(d) != null ? weightOn(d).toFixed(1) : '—'}</td><td>${lifts[d] ? esc(lifts[d].join(', ')) : ''}</td></tr>`;
     }).join('') + '</tbody>';
 }
 
@@ -1714,6 +1771,7 @@ function renderProgress() {
   $('#pg-nohealth').hidden = has; $('#pg-health').hidden = !has;
   renderKpis(H); renderInsights(H, ex); renderCoach(); renderWeight(dates); renderWeeks(dates, H); renderExTable(ex); renderDaily(dates, H);
   if (!has) return;
+  renderFood(dates, H);
   const title = d => niceDate(d) + (lifts[d] ? ' · ' + lifts[d].join(', ') : '');
   barChart($('#ch-steps'), {
     label:'Steps per day', rows:dates.map(d => ({ key:d, title:title(d), vals:[H[d] ? H[d].steps : null] })),

@@ -102,7 +102,7 @@ def pull(h):
     # ---- daily rollups (exact value fields from the discovery doc)
     def rollup(dtype, key, pick):
         d0, d1 = start, today + timedelta(days=1)
-        if dtype in ('heart-rate', 'total-calories', 'active-minutes') and (d1 - d0).days > 14: d0 = d1 - timedelta(days=14)
+        if dtype in ('heart-rate', 'total-calories', 'active-minutes', 'nutrition-log', 'hydration-log') and (d1 - d0).days > 14: d0 = d1 - timedelta(days=14)
         for p in h.daily(dtype, d0, d1):
             d = civil_date(p.get('civilStartTime'))
             v = pick(p)
@@ -145,12 +145,42 @@ def pull(h):
 
     # ---- weight samples
     def weight():
+        first = {}   # keep the first weigh-in of each day: the morning one
         for p in h.list('weight', f'weight.sample_time.civil_time >= "{f}"'):
             w = p.get('weight') or {}
             st = w.get('sampleTime') or {}
-            d = civil_date(st.get('civilTime') or st.get('physicalTime'))
-            if d and w.get('weightGrams') is not None: day(d)['weightKg'] = round(float(w['weightGrams']) / 1000, 1)
+            d, t = civil_date(st.get('civilTime') or st.get('physicalTime')), str(st.get('physicalTime') or '')
+            if d and w.get('weightGrams') is not None and (d not in first or t < first[d]):
+                first[d] = t
+                day(d)['weightKg'] = round(float(w['weightGrams']) / 1000, 1)
+                day(d)['weightSource'] = 'Google Health'
     attempt('weight', weight)
+
+    # ---- food and water logged in the Google Health app (scope googlehealth.nutrition.readonly)
+    grams = lambda o: (o or {}).get('gramsSum', (o or {}).get('grams'))
+    rnd = lambda x: None if x is None else round(float(x))
+    def nutrients(v, g):
+        return {(n.get('nutrient') or '').upper(): g(n.get('quantity')) for n in v.get('nutrients') or []}
+    def food(p):
+        v = p.get('nutritionLog') or {}
+        kcal, nut = (v.get('energy') or {}).get('kcalSum'), nutrients(v, grams)
+        if not kcal: return None   # days with nothing logged roll up as 0 — leave them empty
+        return {'kcal': rnd(kcal), 'protein': rnd(nut.get('PROTEIN')), 'carbs': rnd(grams(v.get('totalCarbohydrate')) or nut.get('CARBOHYDRATES')),
+                'fat': rnd(grams(v.get('totalFat'))), 'fiber': rnd(nut.get('DIETARY_FIBER'))}
+    attempt('nutrition-log', lambda: rollup('nutrition-log', 'food', food))
+    attempt('hydration-log', lambda: rollup('hydration-log', 'waterMl', lambda p: rnd(((p.get('hydrationLog') or {}).get('amountConsumed') or {}).get('millilitersSum')) or None))
+    def meals():
+        got = {}
+        for p in h.list('nutrition-log', f'nutrition_log.interval.civil_start_time >= "{f}"'):
+            v = p.get('nutritionLog') or {}
+            iv = v.get('interval') or {}
+            d = civil_date(iv.get('civilStartTime') or iv.get('startTime'))
+            if not d: continue
+            got.setdefault(d, []).append({'meal': (v.get('mealType') or '').lower() or None, 'name': v.get('foodDisplayName'),
+                                          'kcal': rnd((v.get('energy') or {}).get('kcal')), 'protein': rnd(nutrients(v, grams).get('PROTEIN')),
+                                          'at': iv.get('startTime')})
+        for d, ms in got.items(): day(d)['meals'] = sorted(ms, key=lambda m: m['at'] or '')
+    attempt('nutrition meals', meals)
 
     # ---- sleep: one record per night, keyed by the morning you woke up
     def sleep():

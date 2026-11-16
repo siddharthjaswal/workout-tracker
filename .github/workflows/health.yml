@@ -2,7 +2,7 @@ name: Pull Google Health data
 
 on:
   schedule:
-    - cron: '30 3 * * *'   # 09:00 IST, after the night's sleep has synced
+    - cron: '30 3,8,13,17 * * *'   # 09:00, 13:30, 18:30, 22:30 IST: the night's sleep, then food logged through the day
   workflow_dispatch:
     inputs:
       days:
