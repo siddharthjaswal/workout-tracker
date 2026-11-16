@@ -8,6 +8,9 @@ on:
       days:
         description: 'How many days back to pull'
         default: '14'
+      debug:
+        description: 'Save raw food/water API replies into the gist (1 = yes)'
+        default: ''
 
 permissions:
   contents: read
@@ -25,6 +28,7 @@ jobs:
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
           DAYS: ${{ inputs.days || '14' }}
+          DEBUG_RAW: ${{ inputs.debug }}
         run: |
           if [ -z "$GHEALTH_REFRESH_TOKEN" ]; then echo "Google Health not connected yet (no secrets) — skipping."; exit 0; fi
           python3 tools/health_pull.py

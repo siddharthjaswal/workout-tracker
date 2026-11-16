@@ -16,6 +16,8 @@ DAYS = int(env('DAYS', '14'))
 today = date.today()
 start = today - timedelta(days=DAYS)
 errors = []
+raw = {}   # DEBUG_RAW=1: raw API replies for the types below go into the (secret) gist, never the public Actions log
+DEBUG_TYPES = ('nutrition-log', 'hydration-log')
 
 
 def http(url, method='GET', body=None, headers=None):
@@ -52,6 +54,7 @@ class Health:
             q = {'filter': flt, 'pageSize': 1000}
             if token: q['pageToken'] = token
             r = http(API + dtype + '/dataPoints?' + urllib.parse.urlencode(q), headers=self.h)
+            if env('DEBUG_RAW') and dtype in DEBUG_TYPES: raw.setdefault(dtype + ' list', []).append(r)
             out += r.get('dataPoints', [])
             token = r.get('nextPageToken')
             if not token: break
@@ -61,6 +64,7 @@ class Health:
         civil = lambda d: {'date': {'year': d.year, 'month': d.month, 'day': d.day}}
         body = {'range': {'start': civil(d0), 'end': civil(d1)}, 'windowSizeDays': 1, 'pageSize': 1000}
         r = http(API + dtype + '/dataPoints:dailyRollUp', 'POST', body, self.h)
+        if env('DEBUG_RAW') and dtype in DEBUG_TYPES: raw[dtype + ' rollup'] = r
         return r.get('rollupDataPoints', [])
 
 
@@ -248,6 +252,7 @@ def main():
     keep = sorted(existing)[-400:]
     out = {'updated': datetime.now(timezone.utc).isoformat(timespec='seconds'), 'source': 'Google Health API via GitHub Actions',
            'range': [start.isoformat(), today.isoformat()], 'errors': errors, 'days': {d: existing[d] for d in keep}}
+    if raw: out['debug'] = raw
     http(f'https://api.github.com/gists/{gid}', 'PATCH', {'files': {GIST_FILE: {'content': json.dumps(out, indent=1)}}},
          {'Authorization': 'Bearer ' + gtok, 'Accept': 'application/vnd.github+json'})
     got = sorted(days)
