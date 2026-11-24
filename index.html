@@ -614,7 +614,7 @@ const V = {
   rearDelt:['buuYPLVXsJg','Colossus Fitness'], hammer:['G7hy-AxQwcQ','Colossus Fitness'], skull:['8ncEJDm7Cig','Lean Physique Lab'],
   slRdl:['Zfr6wizR8rs','Squat University'], revLunge:['u_zSfK5ZFU4','BuiltLean'], stepUp:['DxUNi119Qzs','PureGym'],
   slHip:['jIO6wGeBLHE','Musician Fitness Trainer'], thruster:['tJP-fwf5ASA','J2FIT'], sidePlank:['44ND4bOB-T0','NASM'],
-  bandPulldown:['gebMl23Fw_4','Rehab My Patient'], bandFacePull:['Q77ORURfeYc','Caroline Juster'],
+  bandPulldown:['gebMl23Fw_4','Rehab My Patient'], bandFacePull:['Q77ORURfeYc','Caroline Juster'], bandPushdown:['HpcDEwCP_cg','Ambitious Athletics'],
 };
 /* Warm-ups are dynamic (moving), cool-downs are static holds — never the other way round. */
 const WU_UPPER = [
@@ -665,11 +665,11 @@ const DAYS = [
       prog:'3 × 20 clean → feet on the flat bench (decline) → 3s lowering.',
       cue:'Chest is already tired from the press — 10 here is normal, 3 sets even if the third is short. Hands under shoulders, elbows ~45°, body one line, chest to a fist from the floor.' },
     { n:'Bicep curl', m:'Biceps', sr:'3 × 8-15', w:'2×7.5', rest:'45s', v:V.curl,
-      prog:'→ 2×10 → incline curl on the 45° bench with 2×7.5 → 2×10.',
+      prog:'→ 2×10 → 2×10 plus the band (stand on it, hold it with the dumbbells) → incline curl on the 45° bench.',
       cue:'Elbows pinned to your sides, no swing, lower all the way down.' },
-    { n:'Overhead tricep extension', m:'Triceps', sr:'3 × 10-15', w:'1×10', hold:'one dumbbell, both hands', rest:'45s', v:V.ohTri,
-      prog:'3s lowering → skull crushers lying flat with 2×7.5 → 2×10.',
-      cue:'Seated on the 80° bench. Elbows pointing forward and close to the head, lower behind the head under control.' },
+    { n:'Band tricep pushdown', m:'Triceps — replaces the overhead extension', sr:'3 × 12-20', w:'BAND', hold:'anchored high', rest:'45s', v:V.bandPushdown,
+      prog:'Hold the band lower for more tension → 2s squeeze at the bottom → single-arm, 3 × 12 per arm.',
+      cue:'Band anchored high (same spot as the lat pulldown), face the anchor. Elbows pinned to your sides, push down until the arms are straight, squeeze, then let it rise slowly to chest height. Elbows don’t drift forward.' },
     { n:'Lateral raise', m:'Side delts', sr:'3 × 12-20', w:'2×5', rest:'45s', v:V.lateral,
       prog:'12 strict reps → 2×7.5 → 2×10 partials.',
       cue:'Lead with the elbows, stop at shoulder height, no shrug. Slight forward lean.' },
@@ -743,7 +743,7 @@ const DAYS = [
       prog:'Follow the Upper A ladder.',
       cue:'Strict, slow lowering.' },
     { n:'Overhead tricep extension — finisher', m:'Triceps', sr:'2 × 12', w:'1×10', hold:'one dumbbell, both hands', rest:'30s', v:V.ohTri,
-      prog:'Follow the Upper A ladder.',
+      prog:'3s lowering → skull crushers lying flat with 2×7.5 → 2×10.',
       cue:'Strict, slow lowering.' },
   ]},
 ];
